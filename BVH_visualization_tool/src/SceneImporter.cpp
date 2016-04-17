@@ -1,0 +1,186 @@
+#include "SceneImporter.h"
+
+
+SceneImporter::~SceneImporter()
+{
+}
+
+//-------------------------------------------------
+// author of this part: Marek Vinkler, January 2015
+void SceneImporter::loadFromBinaryFile(const std::string& fileName)
+{
+	ifstream in(fileName, ios::binary);
+
+	if (!in) {
+		qDebug() << "Cannot open import file" << endl;
+		throw "Could not open file " + fileName;
+	}
+
+	// skip layouts
+	uint32_t toSkip;
+	in.read(reinterpret_cast<char*>(&toSkip), sizeof(uint32_t));
+	in.read(reinterpret_cast<char*>(&toSkip), sizeof(uint32_t));
+	in.read(reinterpret_cast<char*>(&toSkip), sizeof(uint32_t));
+
+	// skip builder name
+	in.read(reinterpret_cast<char*>(&toSkip), sizeof(uint32_t));
+	char* buffer = new char[toSkip];
+	in.read(buffer, toSkip*sizeof(char));
+	//mBuilderName.assign(buffer);
+	delete[] buffer;
+
+	// Read triangles
+	uint32_t geometrySize;
+	in.read(reinterpret_cast<char*>(&geometrySize), sizeof(uint32_t));
+	sc->mTriangles.resize(geometrySize);
+	in.read(reinterpret_cast<char*>(sc->mTriangles.data()),
+		geometrySize * sizeof(Triangle));
+
+	qDebug() << sizeof(Triangle);
+
+	// Read indices  
+	uint32_t indexSize;
+	in.read(reinterpret_cast<char*>(&indexSize), sizeof(uint32_t));
+	sc->mTriangleIdx.resize(indexSize);
+	in.read(reinterpret_cast<char*>(sc->mTriangleIdx.data()),
+		indexSize * sizeof(unsigned int));
+
+	// Read nodes
+	uint32_t nodeSize;
+	in.read(reinterpret_cast<char*>(&nodeSize), sizeof(uint32_t));
+	bvh->mNodes.resize(nodeSize);
+	in.read(reinterpret_cast<char*>(bvh->mNodes.data()),
+		nodeSize * sizeof(BVHNode));
+
+
+	in.close();
+
+	qDebug() << "Done.\n";
+
+}
+
+//-----------------------------------------
+
+bool SceneImporter::loadScalars(const string &fileName)
+{
+	std::ifstream inFile(fileName, ios::binary);
+
+	if (!inFile)
+		throw "Input file not created";
+
+	uint32_t actualNodeSize;
+	inFile.read(reinterpret_cast<char*>(&actualNodeSize), sizeof(uint32_t));
+	if (actualNodeSize != bvh->mMeshCenterCoordinatesNr)
+		return false;
+
+	uint8_t colorSetSize;
+	inFile.read(reinterpret_cast<char*>(&colorSetSize), sizeof(uint8_t));
+
+	size_t nameLen;
+	char *setName;
+	for (uint8_t i = 0; i < colorSetSize; i++)
+	{
+		setName = NULL;
+		inFile.read(reinterpret_cast<char*>(&nameLen), sizeof(size_t));
+		setName = new char[nameLen];
+		inFile.read(setName, nameLen*sizeof(char));
+
+		if (strcmp(setName, "area") == 0)
+		{
+			vector<float> areas;
+			areas.resize(actualNodeSize);
+			inFile.read(reinterpret_cast<char*>(areas.data()), actualNodeSize * sizeof(float));
+			for (uint32_t j = 0; j < actualNodeSize; j++)
+			{
+				if (areas[j] != bvh->mBoxSizes[j])
+					return false;
+			}
+			areas.clear();
+		}
+		else
+		{
+			ScalarSet *s = new ScalarSet();
+			s->name.assign(setName, nameLen);
+			s->colors.resize(actualNodeSize);
+			inFile.read(reinterpret_cast<char*>(s->colors.data()), actualNodeSize * sizeof(float));
+			bvh->mScalarSets.push_back(s);
+			bvh->normalizeScalarSet(bvh->mScalarSets.size() - 1);
+		}
+		delete[] setName;
+	}
+	
+	inFile.close();
+}
+/*
+bool SceneImporter::loadScalars(const string &fileName)
+{
+	ifstream ifile(fileName);
+	string word, line;
+	size_t pos;
+
+	// if number of trignles written in the file does not match with the real number of triangles, false
+	getline(ifile, line);
+	istringstream iss(line);
+	iss >> word;
+	unsigned nodeCnt = stoi(word);
+	if (nodeCnt != bvh->mNodes.size())
+		return false;
+
+	// read second line with the string description of all columns
+	// the first one has to be 'id', the sedond one 'area'
+	getline(ifile, line);
+	iss = istringstream(line);
+	unsigned insideIt = 0;
+	while (iss >> word) {
+		if (insideIt == 0 && word != "id")
+			return false;
+		else if (insideIt == 1 && word != "area")
+			return false;
+		else if (insideIt > 1)
+		{
+			ScalarSet *s = new ScalarSet();
+			s->name = word;
+			bvh->mScalarSets.push_back(s);
+			bvh->mScalarSets[bvh->mScalarSets.size() - 1]->colors.resize(bvh->mNodes.size());
+		}
+		insideIt++;
+	}
+
+	unsigned columnCnt = insideIt;
+
+	// read the values
+	unsigned i, j, index;
+	float val;
+	while (getline(ifile, line))
+	{
+		iss = istringstream(line);
+		insideIt = 0;
+		for (i = 0; i < columnCnt; i++)
+		{
+			iss >> val;
+			if (i == 0) {
+				index = val;
+				if (index > bvh->mNodes.size())
+					return false;
+			} 
+
+			// check the given boundary area with the real one
+			
+			else if (i == 1) {
+				//if (val != bvh->mNodes[index].GetBoxSize())
+				//	return false;
+			} 
+
+			else {
+				bvh->mScalarSets[i - 2]->colors[index] = val;
+
+			}
+
+		}
+	}
+
+
+	return true;
+}
+*/
+//-------------------------------------------------
