@@ -1,0 +1,11 @@
+*.vs
+*.pro
+*.user
+*.vcxproj
+*.filters
+*/GeneratedFiles
+*/debug
+*/x64
+*.scal
+build*
+
