@@ -25,6 +25,7 @@ public:
 	void initializeRender(const string &sceneName, const string &camFile);
 	void setFarPlane(const float &f);
 	void setNearPlane(const float &n);
+	void addBVH(BVH *b);
 
     virtual void initializeGL();
     virtual void paintGL();

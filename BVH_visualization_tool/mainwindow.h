@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include <QFileDialog>
 #include <QDoubleSpinBox>
+#include <QMessageBox>
 #include <QLabel>
 #include <QVBoxLayout>
 #include <QSpacerItem>
@@ -52,12 +53,14 @@ private slots:
 	void resetViewTree();
 	void switchCam();
 	void openScene();
+	void addBVH();
 	void addScalars();
 	void resetControlPanel();
 	void updateNearPlane(const double &n);
 	void updateFarPlane(const double &f);
 
 private:
+	QString cameraDialog();
 	void createMenus();
 	void createActions();
 	void setScalars(QWidget *parent);
@@ -73,7 +76,7 @@ private:
 	QTabWidget *tabWidget;
 	vector<ControlPanel*> controlPanelTabs;
 	QMenu *fileMenu;
-	QAction *openAct, *exitAct;
+	QAction *openSceneAct, *openBVHAct, *exitAct;
 	QString sceneFile;
 	QWidget *bvh, *widget3D;
 	QPushButton *resViewT, *changeCam, *addScalarsButton;

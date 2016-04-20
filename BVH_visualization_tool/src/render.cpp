@@ -8,7 +8,7 @@ Render::Render(RenderType::Type type)
     projection.setToIdentity();
 	scaleFactor = 1;
 	startingPosition = QVector3D(0.f, 0.f, 0.f);
-	bvh = new BVH();
+	//bvh = new BVH();
 }
 
 #include <time.h>
@@ -20,20 +20,20 @@ void Render::exportColors(const string &fileName)
 	if (!outFile)
 		throw "Output file not created";
 
-	const uint32_t actualNodeSize = static_cast<uint32_t>(bvh->mMeshCenterCoordinatesNr);
+	const uint32_t actualNodeSize = static_cast<uint32_t>(bvhs[currentBVHIndex]->mMeshCenterCoordinatesNr);
 	outFile.write(reinterpret_cast<const char*>(&actualNodeSize), sizeof(uint32_t));
-	const uint8_t colorSetsSize = static_cast<uint8_t>(bvh->mScalarSets.size());
+	const uint8_t colorSetsSize = static_cast<uint8_t>(bvhs[currentBVHIndex]->mScalarSets.size());
 	outFile.write(reinterpret_cast<const char*>(&colorSetsSize), sizeof(uint8_t));
 
 	string area = "area"; outFile.write((char *)&area, sizeof(string));
-	outFile.write(reinterpret_cast<const char*>(bvh->mBoxSizes.data()),
+	outFile.write(reinterpret_cast<const char*>(bvhs[currentBVHIndex]->mBoxSizes.data()),
 		actualNodeSize * sizeof(float));
 
 	for (unsigned i = 0; i < colorSetsSize; i++)
 	{
-		string setName = bvh->mScalarSets[i]->name;
+		string setName = bvhs[currentBVHIndex]->mScalarSets[i]->name;
 		outFile.write((char *)&setName, sizeof(string));
-		outFile.write(reinterpret_cast<const char*>(bvh->mScalarSets[i]->colors.data()),
+		outFile.write(reinterpret_cast<const char*>(bvhs[currentBVHIndex]->mScalarSets[i]->colors.data()),
 			actualNodeSize * sizeof(float));
 	}
 
@@ -47,7 +47,8 @@ Render::Render(RenderType::Type type, const string &sceneName)
 	startingPosition = QVector3D(0.f, 0.f, 0.f);
 
     sc = new Scene();
-    bvh = new BVH();
+    BVH *bvh = new BVH();
+	bvhs.push_back(bvh);
 
 	sceneImporter = new SceneImporter(bvh, sc);
 	sceneImporter->loadFromBinaryFile(sceneName);
@@ -58,8 +59,13 @@ Render::~Render()
     delete sc;
     sc = NULL;
 
-	delete bvh;
-	bvh = NULL;
+	for (vector<BVH*>::iterator it = bvhs.begin(); it != bvhs.end(); it++)
+	{
+		delete *it;
+		*it = NULL;
+	}
+
+	bvhs.clear();
 
 	delete sceneImporter;
 	sceneImporter = NULL;

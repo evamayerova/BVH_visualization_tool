@@ -111,76 +111,60 @@ bool SceneImporter::loadScalars(const string &fileName)
 	
 	inFile.close();
 }
-/*
-bool SceneImporter::loadScalars(const string &fileName)
-{
-	ifstream ifile(fileName);
-	string word, line;
-	size_t pos;
 
-	// if number of trignles written in the file does not match with the real number of triangles, false
-	getline(ifile, line);
-	istringstream iss(line);
-	iss >> word;
-	unsigned nodeCnt = stoi(word);
-	if (nodeCnt != bvh->mNodes.size())
+bool SceneImporter::loadBVH(BVH *b, const string & fileName)
+{
+	ifstream in(fileName, ios::binary);
+
+	if (!in) {
+		qDebug() << "Cannot open import file" << endl;
+		throw "Could not open file " + fileName;
+	}
+
+	// skip layouts
+	uint32_t toSkip;
+	in.read(reinterpret_cast<char*>(&toSkip), sizeof(uint32_t));
+	in.read(reinterpret_cast<char*>(&toSkip), sizeof(uint32_t));
+	in.read(reinterpret_cast<char*>(&toSkip), sizeof(uint32_t));
+
+	// skip builder name
+	in.read(reinterpret_cast<char*>(&toSkip), sizeof(uint32_t));
+	char* buffer = new char[toSkip];
+	in.read(buffer, toSkip*sizeof(char));
+	//mBuilderName.assign(buffer);
+	delete[] buffer;
+
+	// Read triangles
+	uint32_t geometrySize;
+	vector<Triangle> tmpTriangles;
+	in.read(reinterpret_cast<char*>(&geometrySize), sizeof(uint32_t));
+	tmpTriangles.resize(geometrySize);
+	in.read(reinterpret_cast<char*>(tmpTriangles.data()),
+		geometrySize * sizeof(Triangle));
+
+	if (memcmp(tmpTriangles.data(), sc->mTriangles.data(), geometrySize * sizeof(Triangle)) != 0)
 		return false;
 
-	// read second line with the string description of all columns
-	// the first one has to be 'id', the sedond one 'area'
-	getline(ifile, line);
-	iss = istringstream(line);
-	unsigned insideIt = 0;
-	while (iss >> word) {
-		if (insideIt == 0 && word != "id")
-			return false;
-		else if (insideIt == 1 && word != "area")
-			return false;
-		else if (insideIt > 1)
-		{
-			ScalarSet *s = new ScalarSet();
-			s->name = word;
-			bvh->mScalarSets.push_back(s);
-			bvh->mScalarSets[bvh->mScalarSets.size() - 1]->colors.resize(bvh->mNodes.size());
-		}
-		insideIt++;
-	}
+	qDebug() << sizeof(Triangle);
 
-	unsigned columnCnt = insideIt;
+	// Read indices  
+	uint32_t indexSize;
+	vector<unsigned> tmpIndices;
+	in.read(reinterpret_cast<char*>(&indexSize), sizeof(uint32_t));
+	tmpIndices.resize(indexSize);
+	in.read(reinterpret_cast<char*>(tmpIndices.data()),
+		indexSize * sizeof(unsigned int));
 
-	// read the values
-	unsigned i, j, index;
-	float val;
-	while (getline(ifile, line))
-	{
-		iss = istringstream(line);
-		insideIt = 0;
-		for (i = 0; i < columnCnt; i++)
-		{
-			iss >> val;
-			if (i == 0) {
-				index = val;
-				if (index > bvh->mNodes.size())
-					return false;
-			} 
+	// Read nodes
+	uint32_t nodeSize;
+	in.read(reinterpret_cast<char*>(&nodeSize), sizeof(uint32_t));
+	b->mNodes.resize(nodeSize);
+	in.read(reinterpret_cast<char*>(b->mNodes.data()),
+		nodeSize * sizeof(BVHNode));
 
-			// check the given boundary area with the real one
-			
-			else if (i == 1) {
-				//if (val != bvh->mNodes[index].GetBoxSize())
-				//	return false;
-			} 
+	in.close();
 
-			else {
-				bvh->mScalarSets[i - 2]->colors[index] = val;
-
-			}
-
-		}
-	}
-
+	qDebug() << "Done.\n";
 
 	return true;
 }
-*/
-//-------------------------------------------------

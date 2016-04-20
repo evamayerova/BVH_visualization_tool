@@ -49,7 +49,8 @@ public:
 
 	SceneImporter *sceneImporter;
     Scene *sc;
-    BVH *bvh;
+    vector<BVH*> bvhs;
+	unsigned currentBVHIndex;
     float scaleFactor;
 	QVector3D startingPosition, currentPosition;
 

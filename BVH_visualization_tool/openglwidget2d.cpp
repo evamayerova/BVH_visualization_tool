@@ -7,6 +7,13 @@ OpenGlWidget2D::OpenGlWidget2D(QWidget *parent) : QOpenGLWidget(parent)
     QOpenGLDebugLogger *logger = new QOpenGLDebugLogger(this);
 }
 
+BVH * OpenGlWidget2D::addBVH(const string &fileName)
+{
+	this->makeCurrent();
+	render->addBVH(fileName);
+	return render->bvhs[render->bvhs.size() - 1];
+}
+
 void OpenGlWidget2D::initializeRender(const string &sceneName)
 {
 	this->makeCurrent();
@@ -145,5 +152,5 @@ void OpenGlWidget2D::mouseReleaseEvent(QMouseEvent *e)
 
 void OpenGlWidget2D::generateTree()
 {
-    render->bvh->generateTree();
+    render->bvhs[render->currentBVHIndex]->generateTree();
 }

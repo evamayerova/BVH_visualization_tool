@@ -89,7 +89,7 @@ SceneRender::SceneRender(const string &sceneName, const string &camFile) : Rende
 void SceneRender::loadScene(const string & sceneName)
 {
 	sc = new Scene();
-	sceneImporter = new SceneImporter(bvh, sc);
+	sceneImporter = new SceneImporter(bvhs[currentBVHIndex], sc);
 	sceneImporter->loadFromBinaryFile(sceneName);
 	drawer = new SceneDrawer(sc, &shader, &bboxShader);
 }
@@ -106,7 +106,7 @@ void SceneRender::draw()
 
 int SceneRender::pick(ray &r)
 {
-	if (castRay(&bvh->mNodes[0], 0, r))
+	if (castRay(&bvhs[currentBVHIndex]->mNodes[0], 0, r))
 		return 1;
 
 	return 0;
@@ -124,12 +124,12 @@ const bool SceneRender::castRay(BVHNode *node, unsigned nodeIndex, ray & r)
 {
 	if (node->intersect(r)) {
 		if (node->axis < 3) {
-			bool left = castRay(&bvh->mNodes[node->child], node->child, r);
-			bool right = castRay(&bvh->mNodes[node->child + 1], node->child + 1, r);
+			bool left = castRay(&bvhs[currentBVHIndex]->mNodes[node->child], node->child, r);
+			bool right = castRay(&bvhs[currentBVHIndex]->mNodes[node->child + 1], node->child + 1, r);
 			return left || right;
 		}
 		else {
-			drawer->setBBoxVertices(bvh, node);
+			drawer->setBBoxVertices(bvhs[currentBVHIndex], node);
 			for (unsigned i = 0; i < node->children; i++) {
 				if (rayTriangle(r, &sc->mTriangles[sc->mTriangleIdx[node->child + i]]))
 					r.BVHListNode = nodeIndex;
@@ -173,7 +173,7 @@ const bool SceneRender::rayTriangle(ray & r, Triangle * t)
 
 void SceneRender::addBBox(BVHNode * n)
 {
-	drawer->setBBoxVertices(bvh, n);
+	drawer->setBBoxVertices(bvhs[currentBVHIndex], n);
 }
 
 void SceneRender::removeBBox()

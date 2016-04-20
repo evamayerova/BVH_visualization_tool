@@ -29,6 +29,7 @@ public:
     ~BVH();
 	unsigned getTriangleCount(int index);
     void generateTree();
+	void setDefaultScalars();
 	void normalizeScalarSets();
 	void normalizeScalarSet(int index);
 	void normalizeScalarSet(int index, const float & resizedMin, const float & resizedMax);

@@ -90,24 +90,47 @@ void MainWindow::AddRender(TreeRender *r)
 		showControlPanel();
 }
 
+QString MainWindow::cameraDialog()
+{
+	QMessageBox *askCamFileMessage = new QMessageBox();
+	askCamFileMessage->setText("No file with camera settings detected. Would you like to select the file yourself?");
+	askCamFileMessage->setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
+	askCamFileMessage->setDefaultButton(QMessageBox::Cancel);
+	int ret = askCamFileMessage->exec();
+	
+	QString camFile;
+	if (ret == QMessageBox::Ok)
+	{
+		camFile = QFileDialog::getOpenFileName(this,
+			tr("Select camera file"), ".", tr("Cammera settings files (*.cam)"));
+	}
+	
+	return camFile;
+}
+
 void MainWindow::createMenus()
 {
 	fileMenu = menuBar()->addMenu(tr("&File"));
-	fileMenu->addAction(openAct);
+	fileMenu->addAction(openSceneAct);
+	fileMenu->addAction(openBVHAct);
 }
 
 void MainWindow::createActions()
 {
-	openAct = new QAction(tr("&Open"), this);
-	openAct->setShortcuts(QKeySequence::Open);
-	openAct->setStatusTip(tr("Open file"));
-	connect(openAct, &QAction::triggered, this, &MainWindow::openScene);
+	openSceneAct = new QAction(tr("&Open"), this);
+	openSceneAct->setShortcuts(QKeySequence::Open);
+	openSceneAct->setStatusTip(tr("Open file"));
+	connect(openSceneAct, &QAction::triggered, this, &MainWindow::openScene);
+
+	openBVHAct = new QAction(tr("&Add BVH"), this);
+	openBVHAct->setStatusTip(tr("Add another BVH to actual scene"));
+	connect(openBVHAct, &QAction::triggered, this, &MainWindow::addBVH);
 }
 
 void MainWindow::setSliders(int stepsNr, QSlider *a, QSlider *b, QLabel *aLabel, QLabel *bLabel, int scalarSetIndex)
 {
-	float scMin = tRender->bvh->mScalarSets[mCurrentScalarSet]->localMin;
-	float scMax = tRender->bvh->mScalarSets[mCurrentScalarSet]->localMax;
+	float scMin = tRender->bvhs[currentTab]->mScalarSets[mCurrentScalarSet]->localMin;
+	float scMax = tRender->bvhs[currentTab]->mScalarSets[mCurrentScalarSet]->localMax;
 
 	sliderStepAdd = scMin;
 	sliderStepMult = (scMax - scMin) / stepsNr;
@@ -149,10 +172,10 @@ void MainWindow::setScalars(QWidget *parent)
 	// set combobox with scalar sets
 	disconnect(controlPanelTabs[currentTab]->scalars->scalars);
 	controlPanelTabs[currentTab]->scalars->scalars->clear();
-	for (int i = 0; i < tRender->bvh->mScalarSets.size(); i++)
+	for (int i = 0; i < tRender->bvhs[currentTab]->mScalarSets.size(); i++)
 	{
 		controlPanelTabs[currentTab]->scalars->scalars->addItem(
-			QString::fromStdString(tRender->bvh->mScalarSets[i]->name));
+			QString::fromStdString(tRender->bvhs[currentTab]->mScalarSets[i]->name));
 	}
 	// handle combobox selection
 	connect(controlPanelTabs[currentTab]->scalars->scalars, 
@@ -205,8 +228,8 @@ void MainWindow::showControlPanel()
 	tabWidget->setCurrentIndex(currentTab);
 
 	// scalar value buttons
-	c->treeStats->importedBVHnodeCount->setText(QString("Imported node count: ") + QString::number(tRender->bvh->mNodes.size()));
-	c->treeStats->realBVHnodeCount->setText(QString("Real node count: ") + QString::number(tRender->bvh->mMeshCenterCoordinatesNr));
+	c->treeStats->importedBVHnodeCount->setText(QString("Imported node count: ") + QString::number(tRender->bvhs[currentTab]->mNodes.size()));
+	c->treeStats->realBVHnodeCount->setText(QString("Real node count: ") + QString::number(tRender->bvhs[currentTab]->mMeshCenterCoordinatesNr));
 
 	setScalars(this);
 
@@ -230,10 +253,10 @@ void MainWindow::fillStats(QVBoxLayout * w)
 
 	QLabel *ibvhncl = new QLabel(this);
 	assert(tRender != NULL);
-	ibvhncl->setText("Imported BVH nodes count: " + QString::number(tRender->bvh->mNodes.size()));
+	ibvhncl->setText("Imported BVH nodes count: " + QString::number(tRender->bvhs[currentTab]->mNodes.size()));
 
 	QLabel *rbvhncl = new QLabel(this);
-	rbvhncl->setText("Real BVH nodes count: " + QString::number(tRender->bvh->mMeshCenterCoordinatesNr));
+	rbvhncl->setText("Real BVH nodes count: " + QString::number(tRender->bvhs[currentTab]->mMeshCenterCoordinatesNr));
 	//QSpacerItem *spacer = new QSpacerItem(10, 10, QSizePolicy::Minimum, QSizePolicy::Expanding);
 
 	w->addWidget(ibvhncl);
@@ -247,12 +270,12 @@ void MainWindow::PrintNodeInfo(int nodeIndex)
 	{
 		controlPanelTabs[currentTab]->currNodeStats->container->hide();
 		sRender->removeBBox();
-		tRender->drawer->clearPath();
+		tRender->drawers[currentTab]->clearPath();
 	}
 	else
 	{
 		controlPanelTabs[currentTab]->currNodeStats->index->setText("index: " + QString::number(nodeIndex));
-		BVHNode *n = &tRender->bvh->mNodes[nodeIndex];
+		BVHNode *n = &tRender->bvhs[currentTab]->mNodes[nodeIndex];
 		controlPanelTabs[currentTab]->currNodeStats->bounds->setText(
 			"bounds:\n min: [" + QString::number(n->bounds[0][0]) + "; " +
 			QString::number(n->bounds[0][1]) + "; " +
@@ -261,11 +284,11 @@ void MainWindow::PrintNodeInfo(int nodeIndex)
 			QString::number(n->bounds[1][1]) + "; " +
 			QString::number(n->bounds[1][2]) + "]");
 		controlPanelTabs[currentTab]->currNodeStats->triangleNr->setText(
-			"triangles: " + QString::number(tRender->bvh->getTriangleCount(nodeIndex)));
+			"triangles: " + QString::number(tRender->bvhs[currentTab]->getTriangleCount(nodeIndex)));
 		controlPanelTabs[currentTab]->currNodeStats->container->show();
 
-		tRender->drawer->changeScalarSet(mCurrentScalarSet);
-		tRender->drawer->highlightNode(nodeIndex);
+		tRender->drawers[currentTab]->changeScalarSet(mCurrentScalarSet);
+		tRender->drawers[currentTab]->highlightNode(nodeIndex);
 		sRender->addBBox(n);
 	}
 }
@@ -282,10 +305,10 @@ void MainWindow::DisplayBVHPath(int nodeIndex)
 
 	while (current != -1) {
 		toDisplay.push_back(current);
-		current = tRender->bvh->mNodeParents[current];
+		current = tRender->bvhs[currentTab]->mNodeParents[current];
 	}
 
-	tRender->drawer->changeScalarSet(mCurrentScalarSet);
+	tRender->drawers[currentTab]->changeScalarSet(mCurrentScalarSet);
 	tRender->displayPath(toDisplay);
 }
 
@@ -312,14 +335,19 @@ void MainWindow::changeRange()
 	controlPanelTabs[currentTab]->scalars->localMin->setText(QString::number(min(a, b), 'f', 2));
 	controlPanelTabs[currentTab]->scalars->localMax->setText(QString::number(max(a, b), 'f', 2));
 
-	tRender->bvh->normalizeScalarSet(mCurrentScalarSet, min(a, b), max(a, b));
-	tRender->drawer->changeScalarSet(mCurrentScalarSet);
-	tRender->drawer->showDisplayedNodes();
+	tRender->bvhs[currentTab]->normalizeScalarSet(mCurrentScalarSet, min(a, b), max(a, b));
+	tRender->drawers[currentTab]->changeScalarSet(mCurrentScalarSet);
+	tRender->drawers[currentTab]->showDisplayedNodes();
 }
 
 void MainWindow::changeTab(int current)
 {
 	currentTab = current;
+	if (current == -1)
+		return;
+
+	tRender->currentBVHIndex = current;
+	sRender->currentBVHIndex = current;
 }
 
 void MainWindow::resetViewTree()
@@ -353,10 +381,27 @@ void MainWindow::openScene()
 		return;
 
 	QString camFile = extractCamFile(sceneFile);
+	if (!ifstream(camFile.toStdString()))
+		camFile = cameraDialog();
+
 	resetControlPanel();
+	currentTab = -1;
 
 	ui->openGLWidget2D->initializeRender(sceneFile.toStdString());
 	ui->openGLWidget3D->initializeRender(sceneFile.toStdString(), camFile.toStdString());
+}
+
+void MainWindow::addBVH()
+{
+	sceneFile = QFileDialog::getOpenFileName(this,
+		tr("Open file"), "/home/", tr("BVH files (*.bvh)"));
+
+	if (sceneFile.isEmpty())
+		return;
+
+	BVH *bvh = ui->openGLWidget2D->addBVH(sceneFile.toStdString());
+	ui->openGLWidget3D->addBVH(bvh);
+	showControlPanel();
 }
 
 void MainWindow::addScalars()
@@ -391,6 +436,9 @@ void MainWindow::resetControlPanel()
 		clearWidget(controlPanelTabs[currentTab]->currNodeStats->layout);
 		clearWidget(ui->controlPanel);
 	}
+	currentTab = -1;
+	controlPanelTabs.clear();
+	tabWidget->clear();
 }
 
 void MainWindow::updateNearPlane(const double & n)
@@ -419,7 +467,7 @@ void MainWindow::handleScalarButton(int index)
 		return;
 
 	this->mCurrentScalarSet = index;
-	this->tRender->drawer->changeScalarSet(index);
+	this->tRender->drawers[currentTab]->changeScalarSet(index);
 
 	setSliders(100, 
 		controlPanelTabs[currentTab]->scalars->first, 

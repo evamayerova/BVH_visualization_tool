@@ -15,6 +15,7 @@ public:
 
 	void loadFromBinaryFile(const string& fileName);
 	bool loadScalars(const string &fileName);
+	bool loadBVH(BVH *b, const string &fileName);
 
 	BVH *bvh;
 	Scene *sc;

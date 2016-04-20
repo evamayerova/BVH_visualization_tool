@@ -144,6 +144,37 @@ void BVH::generateTree()
     fillImported();
 }
 
+void BVH::setDefaultScalars()
+{
+	ScalarSet *area = new ScalarSet();
+	area->name = "area";
+	area->colors.resize(mMeshCenterCoordinatesNr);
+	for (unsigned i = 0; i < mMeshCenterCoordinatesNr; i++)
+	{
+		area->colors[i] = mBoxSizes[i];
+	}
+	mScalarSets.push_back(area);
+
+	ScalarSet *a = new ScalarSet();
+	a->name = "relative area";
+	a->colors.resize(mMeshCenterCoordinatesNr);
+	for (unsigned i = 0; i < mMeshCenterCoordinatesNr; i++)
+	{
+		a->colors[i] = mNodes[mMeshToBVHIndices[i]].GetBoxSize() *
+			pow(2, mNodeDepths[mMeshToBVHIndices[i]]);
+	}
+	mScalarSets.push_back(a);
+
+	ScalarSet *b = new ScalarSet();
+	b->name = "triangle number";
+	b->colors.resize(mMeshCenterCoordinatesNr);
+	for (unsigned i = 0; i < mMeshCenterCoordinatesNr; i++)
+	{
+		b->colors[i] = getTriangleCount(mMeshToBVHIndices[i]);
+	}
+	mScalarSets.push_back(b);
+}
+
 void BVH::normalizeScalarSets()
 {
 	for (unsigned i = 0; i < mScalarSets.size(); i ++)

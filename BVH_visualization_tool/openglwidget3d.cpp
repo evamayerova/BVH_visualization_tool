@@ -83,6 +83,11 @@ void OpenGlWidget3D::setNearPlane(const float &n)
 	resizeGL(width(), height());
 }
 
+void OpenGlWidget3D::addBVH(BVH *b)
+{
+	render->bvhs.push_back(b);
+}
+
 void OpenGlWidget3D::setFarPlane(const float &f)
 {
 	farPlane = f;
