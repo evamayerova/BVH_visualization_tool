@@ -3,6 +3,7 @@
 #include "Mesh.h"
 #include "bvh.h"
 #include <QVector3D>
+#include <assert.h>
 
 class BVHDrawer : protected QOpenGLFunctions_4_3_Core
 {

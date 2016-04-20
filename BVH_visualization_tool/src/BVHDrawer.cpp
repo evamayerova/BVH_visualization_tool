@@ -103,28 +103,45 @@ void BVHDrawer::generateMeshes()
 	m->indicesNr = meshIndices.size();
 
 	glGenVertexArrays(1, &m->vao);
+	assert(glGetError() == GL_NO_ERROR);
 	glBindVertexArray(m->vao);
+	assert(glGetError() == GL_NO_ERROR);
 
 	glGenBuffers(1, &m->vbo);
+	assert(glGetError() == GL_NO_ERROR);
 	glBindBuffer(GL_ARRAY_BUFFER, m->vbo);
+	assert(glGetError() == GL_NO_ERROR);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * meshVertices.size(), meshVertices.data(), GL_STATIC_DRAW);
+	assert(glGetError() == GL_NO_ERROR);
 
 	int vertexLoc = shaderProgram->attributeLocation("position");
+	assert(glGetError() == GL_NO_ERROR);
 	shaderProgram->enableAttributeArray(vertexLoc);
+	assert(glGetError() == GL_NO_ERROR);
 	glVertexAttribPointer(vertexLoc, 3, GL_FLOAT, GL_FALSE, 0, (void *)(0));
+	assert(glGetError() == GL_NO_ERROR);
 
 
 	glGenBuffers(1, &m->eao);
+	assert(glGetError() == GL_NO_ERROR);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m->eao);
+	assert(glGetError() == GL_NO_ERROR);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, meshIndices.size() * sizeof(unsigned int), meshIndices.data(), GL_STATIC_DRAW);
+	assert(glGetError() == GL_NO_ERROR);
 
 	glGenBuffers(1, &m->vboC);
+	assert(glGetError() == GL_NO_ERROR);
 	glBindBuffer(GL_ARRAY_BUFFER, m->vboC);
+	assert(glGetError() == GL_NO_ERROR);
 	glBufferData(GL_ARRAY_BUFFER, bvh->mNodes.size() * 4 * sizeof(float), NULL, GL_DYNAMIC_DRAW);
+	assert(glGetError() == GL_NO_ERROR);
 
 	int colorLoc = shaderProgram->attributeLocation("color_in");
+	assert(glGetError() == GL_NO_ERROR);
 	shaderProgram->enableAttributeArray(colorLoc);
+	assert(glGetError() == GL_NO_ERROR);
 	glVertexAttribPointer(colorLoc, 3, GL_FLOAT, GL_FALSE, 0, (void *)(0));
+	assert(glGetError() == GL_NO_ERROR);
 
 	meshes.push_back(m);
 

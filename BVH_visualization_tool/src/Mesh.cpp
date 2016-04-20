@@ -11,10 +11,15 @@ Mesh::Mesh(QOpenGLShaderProgram *shaderProgram)
 Mesh::~Mesh()
 {
 	glDeleteVertexArrays(1, &vao);
+	assert(glGetError() == GL_NO_ERROR);
 	glDeleteBuffers(1, &vbo);
+	assert(glGetError() == GL_NO_ERROR);
 	glDeleteBuffers(1, &vboC);
+	assert(glGetError() == GL_NO_ERROR);
 	glDeleteBuffers(1, &vboN);
+	assert(glGetError() == GL_NO_ERROR);
 	glDeleteBuffers(1, &eao);
+	assert(glGetError() == GL_NO_ERROR);
 	vao = vbo = vboC = vboN = eao = 0;
 }
 

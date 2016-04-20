@@ -5,8 +5,14 @@
 *.filters
 */GeneratedFiles
 */debug
+*/release
 */x64
 */data
 *.scal
+*sdf
+*.sln
+*.suo
+*ui_mainwindow.h
 build*
+.gitattributes
 

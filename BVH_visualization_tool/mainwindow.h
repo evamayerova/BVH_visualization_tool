@@ -46,8 +46,9 @@ protected:
 
 private slots:
     void handleScalarButton(int index);
-	void setSliders(int stepNr, QSlider *a, QSlider *b, int scalarSetIndex);
+	void setSliders(int stepNr, QSlider *a, QSlider *b, QLabel *aLabel, QLabel *bLabel, int scalarSetIndex);
 	void changeRange();
+	void changeTab(int current);
 	void resetViewTree();
 	void switchCam();
 	void openScene();
@@ -60,27 +61,27 @@ private:
 	void createMenus();
 	void createActions();
 	void setScalars(QWidget *parent);
-	void setCurrNodeStats(QWidget *parent);
+	//void setCurrNodeStats(QWidget *parent);
 	void setSceneStats();
 	void showControlPanel();
 	void fillStats(QVBoxLayout *w);
     Ui::MainWindow *ui;
 	int mCurrentScalarSet;
+	float recalculateValue(const float &val);
+	void connectControlPanelSignals(int index);
 
-	CurrentNodeStats currNodeStats;
-	SceneStats sceneStats;
-	CurrentTreeStats treeStats;
-	ScalarValuesGUI scalarsGUI;
+	QTabWidget *tabWidget;
+	vector<ControlPanel*> controlPanelTabs;
 	QMenu *fileMenu;
-	QAction *openAct;
-	QAction *exitAct;
+	QAction *openAct, *exitAct;
 	QString sceneFile;
 	QWidget *bvh, *widget3D;
-	QPushButton *resViewT, *changeCam;
-	QPushButton *addScalarsButton;
+	QPushButton *resViewT, *changeCam, *addScalarsButton;
 	QDoubleSpinBox *nearPlane, *farPlane;
 
 	float sliderStepMult, sliderStepAdd;
+	float scalarMax;
+	int currentTab;
 };
 
 #endif // MAINWINDOW_H
