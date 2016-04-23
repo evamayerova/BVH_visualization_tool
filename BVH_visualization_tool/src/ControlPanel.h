@@ -7,6 +7,7 @@
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QPushButton>
+#include <QSpinBox>
 
 struct CurrentNodeStats {
 	CurrentNodeStats(QWidget *parent)
@@ -74,6 +75,22 @@ struct ScalarValuesGUI {
 	QPushButton *addScalarsButton;
 };
 
+struct TreeDepth {
+	TreeDepth(QWidget *parent)
+	{
+		container = new QWidget(parent);
+		QHBoxLayout *l = new QHBoxLayout(container);
+		label = new QLabel("Maximal tree depth", container);
+		depthHolder = new QSpinBox(container);
+		l->addWidget(label);
+		l->addWidget(depthHolder);
+
+	}
+	QWidget *container;
+	QLabel *label;
+	QSpinBox *depthHolder;
+};
+
 class ControlPanel {
 public:
 	ControlPanel();
@@ -82,4 +99,5 @@ public:
 	CurrentTreeStats *treeStats;
 	CurrentNodeStats *currNodeStats;
 	ScalarValuesGUI *scalars;
+	TreeDepth *treeDepth;
 };

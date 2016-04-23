@@ -50,6 +50,7 @@ private slots:
 	void setSliders(int stepNr, QSlider *a, QSlider *b, QLabel *aLabel, QLabel *bLabel, int scalarSetIndex);
 	void changeRange();
 	void changeTab(int current);
+	void changeTreeDepth(int newDepth);
 	void resetViewTree();
 	void switchCam();
 	void openScene();
@@ -64,6 +65,7 @@ private:
 	void createMenus();
 	void createActions();
 	void setScalars(QWidget *parent);
+	void setTreeDepthRange(QWidget *parent);
 	//void setCurrNodeStats(QWidget *parent);
 	void setSceneStats();
 	void showControlPanel();

@@ -15,4 +15,4 @@
 *ui_mainwindow.h
 build*
 .gitattributes
-
+*.autosave

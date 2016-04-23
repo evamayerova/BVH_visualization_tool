@@ -95,8 +95,6 @@ TreeRender::TreeRender(const string &sceneName) : Render(RenderType::Tree, scene
 	if (!initShaders(&shader, "src/shaders/vs.vert", "src/shaders/fs.frag"))
 		throw "shader creation failed";
 
-	currentBVHIndex = 0;
-
 	BVHDrawer *drawer = new BVHDrawer(bvhs[currentBVHIndex], &shader);
 
 #ifdef EXPORT
@@ -144,6 +142,15 @@ void TreeRender::addBVH(const string & fileName)
 		drawer->changeScalarSet(0);
 		bvhs.push_back(bvh);
 	}
+}
+
+void TreeRender::changeTreeDepth(int newDepth, int scalarSet)
+{
+	delete drawers[currentBVHIndex];
+	drawers[currentBVHIndex] = new BVHDrawer(bvhs[currentBVHIndex], &this->shader, newDepth);
+	bvhs[currentBVHIndex]->setDefaultScalars();
+	bvhs[currentBVHIndex]->normalizeScalarSets();
+	drawers[currentBVHIndex]->changeScalarSet(scalarSet);
 }
 
 TreeRender::~TreeRender()

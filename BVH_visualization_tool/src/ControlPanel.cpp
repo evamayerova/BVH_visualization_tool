@@ -42,12 +42,14 @@ ControlPanel::ControlPanel()
 	treeStats = new CurrentTreeStats(container);
 	currNodeStats = new CurrentNodeStats(container);
 	scalars = new ScalarValuesGUI(container);
+	treeDepth = new TreeDepth(container);
 
 	QVBoxLayout *l = new QVBoxLayout();
 	l->addWidget(currNodeStats->container);
 	l->addWidget(treeStats->container);
-	l->addWidget(currNodeStats->container);
+	//l->addWidget(currNodeStats->container);
 	l->addWidget(scalars->container);
+	l->addWidget(treeDepth->container);
 	l->addSpacerItem(new QSpacerItem(10, 10, QSizePolicy::Minimum, QSizePolicy::Expanding));
 	l->addWidget(sceneStats->container);
 	container->setLayout(l);

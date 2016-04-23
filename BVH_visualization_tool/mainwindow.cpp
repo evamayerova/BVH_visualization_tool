@@ -184,6 +184,14 @@ void MainWindow::setScalars(QWidget *parent)
 		SLOT(handleScalarButton(int)));
 }
 
+void MainWindow::setTreeDepthRange(QWidget *parent)
+{
+	controlPanelTabs[currentTab]->treeDepth->depthHolder->setRange(
+		1, tRender->bvhs[currentTab]->depth);
+	controlPanelTabs[currentTab]->treeDepth->depthHolder->setValue(
+		tRender->bvhs[currentTab]->depth);
+}
+
 /*
 void MainWindow::setCurrNodeStats(QWidget *parent)
 {
@@ -213,7 +221,14 @@ void MainWindow::connectControlPanelSignals(int index)
 	connect(controlPanelTabs[index]->scalars->addScalarsButton, 
 		SIGNAL(released()), 
 		this, 
-		SLOT(addScalars()));
+		SLOT(addScalars())
+		);
+
+	connect(controlPanelTabs[index]->treeDepth->depthHolder,
+		SIGNAL(valueChanged(int)),
+		this,
+		SLOT(changeTreeDepth(int))
+		);
 }
 
 void MainWindow::showControlPanel()
@@ -232,7 +247,7 @@ void MainWindow::showControlPanel()
 	c->treeStats->realBVHnodeCount->setText(QString("Real node count: ") + QString::number(tRender->bvhs[currentTab]->mMeshCenterCoordinatesNr));
 
 	setScalars(this);
-
+	setTreeDepthRange(this);
 	setSceneStats();
 
 	resViewT->show();
@@ -346,8 +361,17 @@ void MainWindow::changeTab(int current)
 	if (current == -1)
 		return;
 
-	tRender->currentBVHIndex = current;
-	sRender->currentBVHIndex = current;
+	if (tRender && sRender)
+	{
+		tRender->currentBVHIndex = current;
+		sRender->currentBVHIndex = current;
+	}
+}
+
+void MainWindow::changeTreeDepth(int newDepth)
+{
+	ui->openGLWidget2D->makeCurrent();
+	tRender->changeTreeDepth(newDepth, mCurrentScalarSet);
 }
 
 void MainWindow::resetViewTree()

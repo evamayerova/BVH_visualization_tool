@@ -4,12 +4,12 @@
 
 #define MAX_MESH_WIDTH 0.2
 
-BVHDrawer::BVHDrawer(BVH *b, QOpenGLShaderProgram *sp)
+BVHDrawer::BVHDrawer(BVH *b, QOpenGLShaderProgram *sp, int treeDepth)
 {
 	initializeOpenGLFunctions();
 	shaderProgram = sp;
 	bvh = b;
-	bvh->generateTree();
+	bvh->generateTree(treeDepth);
 	generateMeshes();
 	currentScalarSet = 0;
 	currentNode = -1;

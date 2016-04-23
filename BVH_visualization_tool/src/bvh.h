@@ -10,6 +10,8 @@
 #include <QVector2D>
 #include <QVector3D>
 
+#define MAX_TREE_DEPTH 10000
+
 using namespace std;
 
 struct ScalarSet {
@@ -28,7 +30,7 @@ public:
     BVH();
     ~BVH();
 	unsigned getTriangleCount(int index);
-    void generateTree();
+    void generateTree(int maxDepth = MAX_TREE_DEPTH);
 	void setDefaultScalars();
 	void normalizeScalarSets();
 	void normalizeScalarSet(int index);
@@ -49,7 +51,7 @@ public:
 
 private:
     //void generateMeshes();
-	void fillImported();
+	void generateRealNodesBFS(int maxDepth = MAX_TREE_DEPTH);
 };
 
 #endif // BVH_H

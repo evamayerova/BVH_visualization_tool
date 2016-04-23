@@ -8,7 +8,7 @@
 class BVHDrawer : protected QOpenGLFunctions_4_3_Core
 {
 public:
-	BVHDrawer(BVH *b, QOpenGLShaderProgram *sp);
+	BVHDrawer(BVH *b, QOpenGLShaderProgram *sp, int treeDepth = MAX_TREE_DEPTH);
 	~BVHDrawer();
 	void generateMeshes();
 	void changeScalarSet(int index);

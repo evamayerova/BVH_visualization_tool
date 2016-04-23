@@ -48,7 +48,7 @@ unsigned BVH::getTriangleCount(int index)
 /*
  * BFS pruchod stromem
  */
-void BVH::fillImported()
+void BVH::generateRealNodesBFS(int maxDepth)
 {
 	mNodeDepths.resize(mNodes.size());
 	mNodeParents.resize(mNodes.size());
@@ -83,6 +83,10 @@ void BVH::fillImported()
 		}
 		depth = mNodeDepths[currIndex];
 		ctr++;
+		if (depth > maxDepth) {
+			nodeQueue = std::queue<int>();
+			break;
+		}
 	}
 
 	nodeQueue.push(0);
@@ -93,6 +97,10 @@ void BVH::fillImported()
 	{
 		int currIndex = nodeQueue.front();
 		nodeQueue.pop();
+
+		if (mNodeDepths[currIndex] > maxDepth) {
+			break;
+		}
 
 		if (actualDepth < mNodeDepths[currIndex]) {
 			mNodes[mNodeParents[currIndex]];
@@ -134,18 +142,25 @@ void BVH::fillImported()
 	}
 }
 
-void BVH::generateTree()
+void BVH::generateTree(int maxDepth)
 {
     arity = 2;
 
     mMeshCenterCoordinates = NULL;
     mMeshCenterCoordinates = new float[mNodes.size() * 2];
 
-    fillImported();
+    generateRealNodesBFS(maxDepth);
 }
 
 void BVH::setDefaultScalars()
 {
+	for (vector<ScalarSet*>::iterator it = mScalarSets.begin(); it != mScalarSets.end(); it++)
+	{
+		delete *it;
+		*it = NULL;
+	}
+	mScalarSets.clear();
+
 	ScalarSet *area = new ScalarSet();
 	area->name = "area";
 	area->colors.resize(mMeshCenterCoordinatesNr);

@@ -50,6 +50,8 @@ Render::Render(RenderType::Type type, const string &sceneName)
     BVH *bvh = new BVH();
 	bvhs.push_back(bvh);
 
+	currentBVHIndex = 0;
+
 	sceneImporter = new SceneImporter(bvh, sc);
 	sceneImporter->loadFromBinaryFile(sceneName);
 }
