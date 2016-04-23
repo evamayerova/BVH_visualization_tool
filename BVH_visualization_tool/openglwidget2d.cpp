@@ -4,14 +4,15 @@
 OpenGlWidget2D::OpenGlWidget2D(QWidget *parent) : QOpenGLWidget(parent)
 {
 	QOpenGLContext *ctx = QOpenGLContext::currentContext();
-    QOpenGLDebugLogger *logger = new QOpenGLDebugLogger(this);
+	QOpenGLDebugLogger *logger = new QOpenGLDebugLogger(this);
 }
 
 BVH * OpenGlWidget2D::addBVH(const string &fileName)
 {
 	this->makeCurrent();
-	render->addBVH(fileName);
-	return render->bvhs[render->bvhs.size() - 1];
+	if (render->addBVH(fileName))
+		return render->bvhs[render->bvhs.size() - 1];
+	return NULL;
 }
 
 void OpenGlWidget2D::initializeRender(const string &sceneName)
@@ -28,40 +29,40 @@ void OpenGlWidget2D::initializeRender(const string &sceneName)
 void OpenGlWidget2D::initializeGL()
 {
 	this->makeCurrent();
-    initializeOpenGLFunctions();
+	initializeOpenGLFunctions();
 	render = NULL;
-    glClearColor(0.2, 0.2, 0.2, 1);
-    timer.start(12, this);
+	glClearColor(0.2, 0.2, 0.2, 1);
+	timer.start(12, this);
 }
 
 void OpenGlWidget2D::paintGL()
 {
 	this->makeCurrent();
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    if (render)
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	if (render)
 		render->draw();
 }
 
 void OpenGlWidget2D::resizeGL(int w, int h)
 {
 	this->makeCurrent();
-    winWidth = w;
-    winHeight = h;
+	winWidth = w;
+	winHeight = h;
 
-    glViewport(0, 0, w, h);
-    if (render)
+	glViewport(0, 0, w, h);
+	if (render)
 		render->projection.setToIdentity();
 }
 
 void OpenGlWidget2D::timerEvent(QTimerEvent *)
 {
-    update();
+	update();
 }
 
 
 void OpenGlWidget2D::scaleModel(int numSteps)
 {
-    scaleFactor = numSteps * 0.1;
+	scaleFactor = numSteps * 0.1;
 	render->scaleView(scaleFactor);// += scaleFactor;
 }
 
@@ -70,17 +71,18 @@ void OpenGlWidget2D::wheelEvent(QWheelEvent *event)
 	if (!render)
 		return;
 
-    int numDegrees = event->delta() / 8;
-    int numSteps = numDegrees / 15;
+	int numDegrees = event->delta() / 8;
+	int numSteps = numDegrees / 15;
 
-    if (event->orientation() == Qt::Horizontal) {
-        qDebug() << "horizontal, numSteps " << numSteps;
-        //scrollHorizontally(numSteps);
-    } else {
-        qDebug() << "vertical, numSteps " << numSteps;
-        scaleModel(numSteps);
-    }
-    event->accept();
+	if (event->orientation() == Qt::Horizontal) {
+		qDebug() << "horizontal, numSteps " << numSteps;
+		//scrollHorizontally(numSteps);
+	}
+	else {
+		qDebug() << "vertical, numSteps " << numSteps;
+		scaleModel(numSteps);
+	}
+	event->accept();
 }
 
 QVector3D OpenGlWidget2D::getWorldCoordinates(const QPoint &p)
@@ -152,5 +154,5 @@ void OpenGlWidget2D::mouseReleaseEvent(QMouseEvent *e)
 
 void OpenGlWidget2D::generateTree()
 {
-    render->bvhs[render->currentBVHIndex]->generateTree();
+	render->bvhs[render->currentBVHIndex]->generateTree();
 }

@@ -66,10 +66,36 @@ void SceneRender::loadCameras(const string &camFilePath)
 	
 }
 
-SceneRender::SceneRender(const string &sceneName, const string &camFile) : Render(RenderType::SceneView, sceneName)
+void SceneRender::loadLights(const string &lightsFilePath)
+{
+	ifstream in(lightsFilePath);
+	if (!in)
+	{
+		light.position = QVector3D(1.f, 1.f, 1.f);
+		light.diffuse = QVector3D(1.f, 1.f, 1.f);
+		return;
+	}
+
+	string line;
+	while (getline(in, line))
+	{
+		sscanf(line.c_str(), "%f %f %f %f %f %f",
+			&light.position[0], &light.position[1], &light.position[2],
+			&light.diffuse[0], &light.diffuse[1], &light.diffuse[2]);
+		qDebug() << QString::fromStdString(line);
+	}
+
+}
+
+SceneRender::SceneRender(
+	const string &sceneName, 
+	const string &camFile,
+	const string &lightsFile) 
+	: Render(RenderType::SceneView, sceneName)
 {
 	currentCamera = 0;
 	loadCameras(camFile);
+	loadLights(lightsFile);
 	currCam.pos = QVector3D(cams[currentCamera]->pos);
 	currCam.dir = QVector3D(cams[currentCamera]->dir);
 	currCam.upVector = QVector3D(cams[currentCamera]->upVector);
@@ -101,7 +127,9 @@ SceneRender::~SceneRender()
 void SceneRender::draw()
 {
 	if (drawer)
-		drawer->draw(&projection, &view, &model);
+	{
+		drawer->draw(&projection, &view, &model, &light);
+	}
 }
 
 int SceneRender::pick(ray &r)

@@ -13,7 +13,7 @@ public:
 	void removeScalarSets();
 	void exportColors(const string &fileName);
 	void loadScene(const string & sceneName);
-	void addBVH(const string &fileName);
+	bool addBVH(const string &fileName);
 	void changeTreeDepth(int newDepth, int scalarSet);
 	void draw();
 	int pick(const QVector2D &point);

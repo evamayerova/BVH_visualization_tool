@@ -18,35 +18,35 @@
 #include "src\ControlPanel.h"
 
 namespace Ui {
-class MainWindow;
+	class MainWindow;
 }
 
 
 class MainWindow : public QMainWindow
 {
-    Q_OBJECT
+	Q_OBJECT
 
 public:
-    explicit MainWindow(QWidget *parent = 0);
-    ~MainWindow();
-	
-	void PrintNodeInfo(int nodeIndex);
-	void DisplayBVHPath(int nodeIndex);
+	explicit MainWindow(QWidget *parent = 0);
+	~MainWindow();
+
 	void AddRender(SceneRender *r);
 	void AddRender(TreeRender *r);
+	void DisplayBVHPath(int nodeIndex);
+	void PrintNodeInfo(int nodeIndex);
 
 	virtual void keyPressEvent(QKeyEvent *e);
 	virtual void keyReleaseEvent(QKeyEvent *e);
 
-	TreeRender *tRender;
-	SceneRender *sRender;
 	QSet<int> pressedKeys;
+	SceneRender *sRender;
+	TreeRender *tRender;
 
 protected:
 	void contextMenuEvent(QContextMenuEvent *event);
 
 private slots:
-    void handleScalarButton(int index);
+	void handleScalarButton(int index);
 	void setSliders(int stepNr, QSlider *a, QSlider *b, QLabel *aLabel, QLabel *bLabel, int scalarSetIndex);
 	void changeRange();
 	void changeTab(int current);
@@ -62,31 +62,32 @@ private slots:
 
 private:
 	QString cameraDialog();
-	void createMenus();
-	void createActions();
-	void setScalars(QWidget *parent);
-	void setTreeDepthRange(QWidget *parent);
-	//void setCurrNodeStats(QWidget *parent);
-	void setSceneStats();
-	void showControlPanel();
-	void fillStats(QVBoxLayout *w);
-    Ui::MainWindow *ui;
-	int mCurrentScalarSet;
-	float recalculateValue(const float &val);
 	void connectControlPanelSignals(int index);
+	void createActions();
+	void createMenus();
+	void fillStats(QVBoxLayout *w);
+	float recalculateValue(const float &val);
+	void setScalars(QWidget *parent);
+	void setSceneStats();
+	void setTreeDepthRange(QWidget *parent);
+	void showControlPanel();
+	void unconsistentBVHDialog();
 
-	QTabWidget *tabWidget;
+	Ui::MainWindow *ui;
 	vector<ControlPanel*> controlPanelTabs;
-	QMenu *fileMenu;
 	QAction *openSceneAct, *openBVHAct, *exitAct;
+	QDoubleSpinBox *nearPlane, *farPlane;
+	QMenu *fileMenu;
+	QPushButton *resViewT, *changeCam, *addScalarsButton;
+	QTabWidget *tabWidget;
 	QString sceneFile;
 	QWidget *bvh, *widget3D;
-	QPushButton *resViewT, *changeCam, *addScalarsButton;
-	QDoubleSpinBox *nearPlane, *farPlane;
 
-	float sliderStepMult, sliderStepAdd;
-	float scalarMax;
-	int currentTab;
+	int mCurrentScalarSet;
+	int mCurrentTab;
+	float mScalarMax;
+	float mSliderStepAdd;
+	float mSliderStepMult;
 };
 
 #endif // MAINWINDOW_H

@@ -11,7 +11,7 @@ void TreeRender::generateScalarSets()
 	for (unsigned i = 0; i < bvhs[currentBVHIndex]->mMeshCenterCoordinatesNr; i++)
 	{
 		a->colors[i] = bvhs[currentBVHIndex]->mNodes[bvhs[currentBVHIndex]->mMeshToBVHIndices[i]].GetBoxSize() *
-					   pow(2,bvhs[currentBVHIndex]->mNodeDepths[bvhs[currentBVHIndex]->mMeshToBVHIndices[i]]);
+			pow(2, bvhs[currentBVHIndex]->mNodeDepths[bvhs[currentBVHIndex]->mMeshToBVHIndices[i]]);
 	}
 	bvhs[currentBVHIndex]->mScalarSets.push_back(a);
 
@@ -127,21 +127,23 @@ void TreeRender::loadScene(const string & sceneName)
 	drawers.push_back(drawer);
 }
 
-void TreeRender::addBVH(const string & fileName)
+bool TreeRender::addBVH(const string & fileName)
 {
 	BVH *bvh = new BVH();
 	if (sceneImporter->loadBVH(bvh, fileName))
 	{
 		currentBVHIndex = bvhs.size();
-		
+
 		BVHDrawer *drawer = new BVHDrawer(bvh, &this->shader);
 		drawers.push_back(drawer);
-		
+
 		bvh->setDefaultScalars();
 		bvh->normalizeScalarSets();
 		drawer->changeScalarSet(0);
 		bvhs.push_back(bvh);
+		return true;
 	}
+	return false;
 }
 
 void TreeRender::changeTreeDepth(int newDepth, int scalarSet)
@@ -165,7 +167,7 @@ TreeRender::~TreeRender()
 
 void TreeRender::draw()
 {
-	if (currentBVHIndex < drawers.size()) 
+	if (currentBVHIndex < drawers.size())
 	{
 		shader.bind();
 		//assert(glGetError() == GL_NO_ERROR);

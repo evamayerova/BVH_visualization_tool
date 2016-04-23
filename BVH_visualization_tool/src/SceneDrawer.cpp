@@ -246,14 +246,22 @@ std::vector<unsigned> SceneDrawer::getPrimitiveIndices(BVH *bvh, BVHNode *n) con
 }
 
 
-void SceneDrawer::draw(QMatrix4x4 *projection, QMatrix4x4 *view, QMatrix4x4 *model)
+void SceneDrawer::draw(QMatrix4x4 *projection, QMatrix4x4 *view, QMatrix4x4 *model, PointLight *light)
 {
 	sceneShader->bind();
-	//qDebug() << glGetError();
 	assert(glGetError() == GL_NO_ERROR);
+
 	sceneShader->setUniformValue("mvp_matrix", *projection * *view * *model);
 	assert(glGetError() == GL_NO_ERROR);
+
 	sceneShader->setUniformValue("model", *model);
+	assert(glGetError() == GL_NO_ERROR);
+
+	QVector4D lightposition = (*model) * QVector4D(light->position, 1.0);
+	sceneShader->setUniformValue("light.position", QVector3D(lightposition));
+	assert(glGetError() == GL_NO_ERROR);
+
+	sceneShader->setUniformValue("light.diffuse", light->diffuse);
 	assert(glGetError() == GL_NO_ERROR);
 	sceneMesh->drawArrays();
 

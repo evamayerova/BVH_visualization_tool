@@ -3,7 +3,7 @@
 OpenGlWidget3D::OpenGlWidget3D(QWidget *parent) : QOpenGLWidget(parent)
 {
 	QOpenGLContext *ctx = QOpenGLContext::currentContext();
-    QOpenGLDebugLogger *logger = new QOpenGLDebugLogger(this);
+	QOpenGLDebugLogger *logger = new QOpenGLDebugLogger(this);
 
 	rotateMovement = false;
 }
@@ -13,14 +13,14 @@ QVector3D OpenGlWidget3D::trackBallMapping(const QPoint & p)
 	QVector3D arcballOrigin = render->currCam.pos + 20 * render->currCam.dir;
 	QVector3D v;
 	float d;
-	v[0] =    2.0 * p.x() / float(winWidth) - 1.0;
-	v[1] = - (2.0 * p.y() / float(winHeight) - 1.0);
-	v[2] =	  0.0;
+	v[0] = 2.0 * p.x() / float(winWidth) - 1.0;
+	v[1] = -(2.0 * p.y() / float(winHeight) - 1.0);
+	v[2] = 0.0;
 
 	float square = v.x() * v.x() + v.y() * v.y();
 	//float square = (v.x() - arcballOrigin.x()) * (v.x() - arcballOrigin.x()) + 
 	//			   (v.y() - arcballOrigin.y()) * (v.y() - arcballOrigin.y());
-	
+
 	if (square <= 1 * 1)
 		v[2] = sqrt(1 * 1 - square);
 	else
@@ -29,15 +29,21 @@ QVector3D OpenGlWidget3D::trackBallMapping(const QPoint & p)
 
 }
 
-void OpenGlWidget3D::initializeRender(const string &sceneName, const string &camFile)
+void OpenGlWidget3D::initializeRender(const string &sceneName, const string &camFile, const string &lightsFile)
 {
 	this->makeCurrent();
 	delete render;
-	render = new SceneRender(sceneName, camFile);
+	render = new SceneRender(sceneName, camFile, lightsFile);
 	if (!render)
 		throw "No render set";
-	mw->AddRender(render);
+	farPlane = 5 *
+		max(
+			max(render->bvhs[0]->mNodes[0].bounds[1][0] - render->bvhs[0]->mNodes[0].bounds[0][0],
+				render->bvhs[0]->mNodes[0].bounds[1][1] - render->bvhs[0]->mNodes[0].bounds[0][1]),
+			render->bvhs[0]->mNodes[0].bounds[1][2] - render->bvhs[0]->mNodes[0].bounds[0][2]);
+
 	resizeGL(width(), height());
+	mw->AddRender(render);
 }
 
 void OpenGlWidget3D::initializeGL()
@@ -72,15 +78,25 @@ void OpenGlWidget3D::paintGL()
 		lastRotPoint = currenRotPoint;
 	}
 
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    if (render)
-        render->draw();
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	if (render)
+		render->draw();
 }
 
 void OpenGlWidget3D::setNearPlane(const float &n)
 {
 	nearPlane = n;
 	resizeGL(width(), height());
+}
+
+float OpenGlWidget3D::getFarPlane()
+{
+	return farPlane;
+}
+
+float OpenGlWidget3D::getNearPlane()
+{
+	return nearPlane;
 }
 
 void OpenGlWidget3D::addBVH(BVH *b)
@@ -97,20 +113,20 @@ void OpenGlWidget3D::setFarPlane(const float &f)
 void OpenGlWidget3D::resizeGL(int w, int h)
 {
 	this->makeCurrent();
-    winWidth = w;
-    winHeight = h;
+	winWidth = w;
+	winHeight = h;
 
-    glViewport(0, 0, w, h);
+	glViewport(0, 0, w, h);
 
-    if (render) {
-        render->projection.setToIdentity();
-        render->projection.perspective(60.0f, w / (float)h, nearPlane, farPlane);
-    }
+	if (render) {
+		render->projection.setToIdentity();
+		render->projection.perspective(60.0f, w / (float)h, nearPlane, farPlane);
+	}
 }
 
 void OpenGlWidget3D::timerEvent(QTimerEvent *)
 {
-    update();
+	update();
 }
 
 void OpenGlWidget3D::wheelEvent(QWheelEvent * event)
@@ -139,7 +155,7 @@ void OpenGlWidget3D::mousePressEvent(QMouseEvent *event)
 		return;
 
 	this->makeCurrent();
-	
+
 	switch (event->button()) {
 	case Qt::LeftButton:
 	{
@@ -225,6 +241,6 @@ void OpenGlWidget3D::mouseMoveEvent(QMouseEvent * e)
 	}
 
 	//lastRotPoint = currPoint;
-	
+
 }
 

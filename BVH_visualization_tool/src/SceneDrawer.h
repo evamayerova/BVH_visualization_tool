@@ -15,7 +15,7 @@ public:
 	SceneDrawer(Scene *sc, QOpenGLShaderProgram *
 		, QOpenGLShaderProgram *bboxShader);
 	~SceneDrawer();
-	void draw(QMatrix4x4 *projection, QMatrix4x4 *view, QMatrix4x4 *model);
+	void draw(QMatrix4x4 *projection, QMatrix4x4 *view, QMatrix4x4 *model, PointLight *light);
 	void setSceneBuffers();
 	void setBBoxBuffers();
 	void setBBoxVertices(BVH *bvh, BVHNode *node);

@@ -22,9 +22,11 @@ public:
     OpenGlWidget3D(QWidget *parent = NULL);
 
 	QVector3D trackBallMapping(const QPoint &p);
-	void initializeRender(const string &sceneName, const string &camFile);
+	void initializeRender(const string &sceneName, const string &camFile, const string &lightsFile);
 	void setFarPlane(const float &f);
 	void setNearPlane(const float &n);
+	float getFarPlane();
+	float getNearPlane();
 	void addBVH(BVH *b);
 
     virtual void initializeGL();
