@@ -177,7 +177,7 @@ void TreeRender::draw()
 
 int TreeRender::pick(const QVector2D &point)
 {
-	for (int i = 0, s = bvhs[currentBVHIndex]->meshExtremes.size(); i < s; i++)
+	for (int i = 0; i < bvhs[currentBVHIndex]->mMeshCenterCoordinatesNr; i++)
 	{
 		QVector2D min = QVector2D(bvhs[currentBVHIndex]->meshExtremes[i].extremes[0].x(), bvhs[currentBVHIndex]->meshExtremes[i].extremes[0].y());
 		QVector2D max = QVector2D(bvhs[currentBVHIndex]->meshExtremes[i].extremes[1].x(), bvhs[currentBVHIndex]->meshExtremes[i].extremes[1].y());

@@ -42,6 +42,7 @@ void BVHDrawer::generateMeshes()
 	if (bvh->mMeshCenterCoordinatesNr < 2)
 		return;
 
+	bvh->meshExtremes.clear();
 	GLfloat meshHeight = 1.0 / float(bvh->depth);
 	GLfloat meshWidth = 1.0;
 	GLfloat actualDepth = bvh->mMeshCenterCoordinates[1];
