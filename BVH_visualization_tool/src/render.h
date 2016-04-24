@@ -40,7 +40,7 @@ public:
 	void moveView(const QVector3D &change);
 	void resetView();
 	void scaleView(const float &scaleFactor);
-    int initShaders(QOpenGLShaderProgram *shader_program, const char * vs, const char * fs);
+    int initShaders(QOpenGLShaderProgram *shader_program, const char * vs, const char * fs, const char *gs = "");
 
     RenderType::Type renderType;
     
@@ -53,6 +53,7 @@ public:
 	unsigned currentBVHIndex;
     float scaleFactor;
 	QVector3D startingPosition, currentPosition;
+	QVector2D hPixel;
 
 private:
 	void exportColors(const string &fileName);

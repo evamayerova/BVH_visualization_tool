@@ -108,10 +108,14 @@ void Render::scaleView(const float &scaleFactor)
 
 }
 
-int Render::initShaders(QOpenGLShaderProgram *shader_program, const char *vs, const char *fs)
+int Render::initShaders(QOpenGLShaderProgram *shader_program, const char *vs, const char *fs, const char *gs)
 {
     if (!shader_program->addShaderFromSourceFile(QOpenGLShader::Vertex, vs))
         return 0;
+
+	if (strcmp(gs, "") != 0)
+		if (!shader_program->addShaderFromSourceFile(QOpenGLShader::Geometry, gs))
+			return 0;
 
     if (!shader_program->addShaderFromSourceFile(QOpenGLShader::Fragment, fs))
         return 0;

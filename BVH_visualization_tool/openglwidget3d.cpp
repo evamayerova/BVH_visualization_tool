@@ -34,6 +34,7 @@ void OpenGlWidget3D::initializeRender(const string &sceneName, const string &cam
 	this->makeCurrent();
 	delete render;
 	render = new SceneRender(sceneName, camFile, lightsFile);
+	render->hPixel = QVector2D(1.f / width(), 1.f / height());
 	if (!render)
 		throw "No render set";
 	farPlane = 5 *
@@ -89,19 +90,20 @@ void OpenGlWidget3D::setNearPlane(const float &n)
 	resizeGL(width(), height());
 }
 
-float OpenGlWidget3D::getFarPlane()
+float OpenGlWidget3D::getFarPlane() const
 {
 	return farPlane;
 }
 
-float OpenGlWidget3D::getNearPlane()
+float OpenGlWidget3D::getNearPlane() const
 {
 	return nearPlane;
 }
 
-void OpenGlWidget3D::addBVH(BVH *b)
+void OpenGlWidget3D::addBVH(BVH *b, const vector<unsigned> &indices)
 {
 	render->bvhs.push_back(b);
+	render->sc->mTriangleIdx.push_back(indices);
 }
 
 void OpenGlWidget3D::setFarPlane(const float &f)

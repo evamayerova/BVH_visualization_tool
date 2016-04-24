@@ -159,7 +159,7 @@ const bool SceneRender::castRay(BVHNode *node, unsigned nodeIndex, ray & r)
 		else {
 			drawer->setBBoxVertices(bvhs[currentBVHIndex], node);
 			for (unsigned i = 0; i < node->children; i++) {
-				if (rayTriangle(r, &sc->mTriangles[sc->mTriangleIdx[node->child + i]]))
+				if (rayTriangle(r, &sc->mTriangles[sc->mTriangleIdx[currentBVHIndex][node->child + i]]))
 					r.BVHListNode = nodeIndex;
 			}
 		}

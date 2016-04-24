@@ -24,5 +24,5 @@ public:
 	~Scene();
 
 	std::vector<Triangle> mTriangles;
-	std::vector<unsigned int> mTriangleIdx;
+	std::vector<std::vector<unsigned int> > mTriangleIdx;
 };

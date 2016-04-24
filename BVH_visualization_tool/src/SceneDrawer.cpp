@@ -212,7 +212,7 @@ void SceneDrawer::setBBoxVertices(BVH *bvh, BVHNode *node)
 	glBindBuffer(GL_ARRAY_BUFFER, sceneMesh->vboC);
 	for (std::vector<unsigned>::iterator it = triangles.begin(); it != triangles.end(); it++)
 	{
-		glBufferSubData(GL_ARRAY_BUFFER, scene->mTriangleIdx[*it] * 3 * 4, sizeof(Color) * 3, localColors.data());
+		glBufferSubData(GL_ARRAY_BUFFER, scene->mTriangleIdx[currentBVHIndex][*it] * 3 * 4, sizeof(Color) * 3, localColors.data());
 	}
 	
 }

@@ -40,10 +40,13 @@ void SceneImporter::loadFromBinaryFile(const std::string& fileName)
 
 	// Read indices  
 	uint32_t indexSize;
+	vector<unsigned int> *indices = new vector<unsigned int>();
 	in.read(reinterpret_cast<char*>(&indexSize), sizeof(uint32_t));
-	sc->mTriangleIdx.resize(indexSize);
-	in.read(reinterpret_cast<char*>(sc->mTriangleIdx.data()),
+	//sc->mTriangleIdx.resize(indexSize);
+	indices->resize(indexSize);
+	in.read(reinterpret_cast<char*>(indices->data()),
 		indexSize * sizeof(unsigned int));
+	sc->mTriangleIdx.push_back(*indices);
 
 	// Read nodes
 	uint32_t nodeSize;
@@ -149,11 +152,12 @@ bool SceneImporter::loadBVH(BVH *b, const string & fileName)
 
 	// Read indices  
 	uint32_t indexSize;
-	vector<unsigned> tmpIndices;
+	vector<unsigned int> *indices = new vector<unsigned int>();
 	in.read(reinterpret_cast<char*>(&indexSize), sizeof(uint32_t));
-	tmpIndices.resize(indexSize);
-	in.read(reinterpret_cast<char*>(tmpIndices.data()),
+	indices->resize(indexSize);
+	in.read(reinterpret_cast<char*>(indices->data()),
 		indexSize * sizeof(unsigned int));
+	sc->mTriangleIdx.push_back(*indices);
 
 	// Read nodes
 	uint32_t nodeSize;

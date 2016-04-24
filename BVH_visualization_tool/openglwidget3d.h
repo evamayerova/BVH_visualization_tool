@@ -25,9 +25,9 @@ public:
 	void initializeRender(const string &sceneName, const string &camFile, const string &lightsFile);
 	void setFarPlane(const float &f);
 	void setNearPlane(const float &n);
-	float getFarPlane();
-	float getNearPlane();
-	void addBVH(BVH *b);
+	float getFarPlane() const;
+	float getNearPlane() const;
+	void addBVH(BVH *b, const vector<unsigned> &indices);
 
     virtual void initializeGL();
     virtual void paintGL();

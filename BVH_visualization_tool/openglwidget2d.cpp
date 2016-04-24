@@ -1,5 +1,6 @@
 #include "openglwidget2d.h"
 #include <cmath>
+#include <assert.h>
 
 OpenGlWidget2D::OpenGlWidget2D(QWidget *parent) : QOpenGLWidget(parent)
 {
@@ -12,6 +13,9 @@ BVH * OpenGlWidget2D::addBVH(const string &fileName)
 	this->makeCurrent();
 	if (render->addBVH(fileName))
 		return render->bvhs[render->bvhs.size() - 1];
+
+	QOpenGLContext *context = QOpenGLContext::currentContext();
+	
 	return NULL;
 }
 
@@ -20,6 +24,7 @@ void OpenGlWidget2D::initializeRender(const string &sceneName)
 	this->makeCurrent();
 	delete render;
 	render = new TreeRender(sceneName);
+	render->hPixel = QVector2D(1.f / width(), 1.f / height());
 	if (!render)
 		throw "No render set";
 	mw->AddRender(render);
@@ -50,8 +55,10 @@ void OpenGlWidget2D::resizeGL(int w, int h)
 	winHeight = h;
 
 	glViewport(0, 0, w, h);
-	if (render)
+	if (render) {
 		render->projection.setToIdentity();
+		render->hPixel = QVector2D(1.f / width(), 1.f / height());
+	}
 }
 
 void OpenGlWidget2D::timerEvent(QTimerEvent *)

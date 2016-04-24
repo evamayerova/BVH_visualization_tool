@@ -23,6 +23,7 @@ public:
 	std::vector<unsigned> getPrimitiveIndices(BVH *bvh, BVHNode *n) const;
 
 	bool showBBox;
+	int currentBVHIndex;
 
 private:
 	Scene *scene;

@@ -77,7 +77,7 @@ TreeRender::TreeRender() : Render(RenderType::Tree)
 	view.lookAt(cam.pos, cam.pos + cam.dir, cam.upVector);
 	projection.setToIdentity();
 
-	if (!initShaders(&shader, "src/shaders/vs.vert", "src/shaders/fs.frag"))
+	if (!initShaders(&shader, "src/shaders/conservative.vert", "src/shaders/conservative.frag", "src/shaders/conservative.geom"))
 		throw "shader creation failed";
 
 }
@@ -92,7 +92,7 @@ TreeRender::TreeRender(const string &sceneName) : Render(RenderType::Tree, scene
 	view.lookAt(cam.pos, cam.pos + cam.dir, cam.upVector);
 	projection.setToIdentity();
 
-	if (!initShaders(&shader, "src/shaders/vs.vert", "src/shaders/fs.frag"))
+	if (!initShaders(&shader, "src/shaders/conservative.vert", "src/shaders/conservative.frag", "src/shaders/conservative.geom"))
 		throw "shader creation failed";
 
 	BVHDrawer *drawer = new BVHDrawer(bvhs[currentBVHIndex], &shader);
@@ -172,6 +172,7 @@ void TreeRender::draw()
 		shader.bind();
 		//assert(glGetError() == GL_NO_ERROR);
 		shader.setUniformValue("mvp_matrix", projection * view * model);
+		shader.setUniformValue("hPixel", hPixel);
 		//assert(glGetError() == GL_NO_ERROR);
 		drawers[currentBVHIndex]->draw();
 	}

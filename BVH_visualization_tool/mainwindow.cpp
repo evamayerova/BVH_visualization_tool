@@ -328,6 +328,7 @@ void MainWindow::PrintNodeInfo(int nodeIndex)
 	}
 }
 
+
 void MainWindow::DisplayBVHPath(int nodeIndex)
 {
 	PrintNodeInfo(nodeIndex);
@@ -388,6 +389,7 @@ void MainWindow::changeTab(int current)
 	{
 		tRender->currentBVHIndex = current;
 		sRender->currentBVHIndex = current;
+		sRender->drawer->currentBVHIndex = current;
 	}
 }
 
@@ -459,7 +461,10 @@ void MainWindow::addBVH()
 	BVH *bvh = ui->openGLWidget2D->addBVH(sceneFile.toStdString());
 	if (bvh)
 	{
-		ui->openGLWidget3D->addBVH(bvh);
+		ui->openGLWidget3D->addBVH(
+			bvh, 
+			tRender->sc->mTriangleIdx[tRender->sc->mTriangleIdx.size() - 1]
+			);
 		showControlPanel();
 	}
 	else
