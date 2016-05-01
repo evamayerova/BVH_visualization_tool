@@ -63,7 +63,8 @@ Render::~Render()
 
 	for (vector<BVH*>::iterator it = bvhs.begin(); it != bvhs.end(); it++)
 	{
-		delete *it;
+		if (*it != NULL)
+			delete *it;
 		*it = NULL;
 	}
 

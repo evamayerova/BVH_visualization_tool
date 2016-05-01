@@ -31,6 +31,12 @@ void Mesh::drawElements()
 	assert(glGetError() == GL_NO_ERROR);
 }
 
+void Mesh::drawArraysPoints()
+{
+	glBindVertexArray(vao);
+	glDrawArrays(GL_POINTS, 0, indicesNr);
+}
+
 void Mesh::drawArrays()
 {
 	glBindVertexArray(vao);

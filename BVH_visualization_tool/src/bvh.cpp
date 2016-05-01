@@ -129,7 +129,7 @@ void BVH::generateRealNodesBFS(int maxDepth)
 		mMeshToBVHIndices.push_back(currIndex);
 		mBVHToMeshIndices[currIndex] = mMeshCenterCoordinatesNr;
 
-		mBoxSizes.push_back(mNodes[currIndex].GetBoxSize());
+		mBoxSizes.push_back(mNodes[currIndex].GetBoxArea());
 
 		mMeshCenterCoordinatesNr++;
 
@@ -160,7 +160,8 @@ void BVH::setDefaultScalars()
 		*it = NULL;
 	}
 	mScalarSets.clear();
-
+	
+	/*
 	ScalarSet *area = new ScalarSet();
 	area->name = "area";
 	area->colors.resize(mMeshCenterCoordinatesNr);
@@ -175,7 +176,7 @@ void BVH::setDefaultScalars()
 	a->colors.resize(mMeshCenterCoordinatesNr);
 	for (unsigned i = 0; i < mMeshCenterCoordinatesNr; i++)
 	{
-		a->colors[i] = mNodes[mMeshToBVHIndices[i]].GetBoxSize() *
+		a->colors[i] = mNodes[mMeshToBVHIndices[i]].GetBoxArea() *
 			pow(2, mNodeDepths[mMeshToBVHIndices[i]]);
 	}
 	mScalarSets.push_back(a);
@@ -188,6 +189,93 @@ void BVH::setDefaultScalars()
 		b->colors[i] = getTriangleCount(mMeshToBVHIndices[i]);
 	}
 	mScalarSets.push_back(b);
+	*/
+
+	float sum;
+	ScalarSet *area = new ScalarSet();
+	area->name = "area";
+	area->colors.resize(mMeshCenterCoordinatesNr);
+	for (unsigned i = 0; i < mMeshCenterCoordinatesNr; i++)
+	{
+		area->colors[i] = mBoxSizes[i];
+	}
+	mScalarSets.push_back(area);
+
+	ScalarSet *volume = new ScalarSet();
+	volume->name = "volume";
+	volume->colors.resize(mMeshCenterCoordinatesNr);
+	for (unsigned i = 0; i < mMeshCenterCoordinatesNr; i++)
+	{
+		volume->colors[i] = mNodes[mMeshToBVHIndices[i]].GetBoxVolume();
+	}
+	mScalarSets.push_back(volume);
+
+	// area relatively to depth
+	ScalarSet *a = new ScalarSet();
+	a->name = "area relative to depth";
+	a->colors.resize(mMeshCenterCoordinatesNr);
+	for (unsigned i = 0; i < mMeshCenterCoordinatesNr; i++)
+	{
+		a->colors[i] = mNodes[mMeshToBVHIndices[i]].GetBoxArea() *
+			pow(2, mNodeDepths[mMeshToBVHIndices[i]]);
+	}
+	mScalarSets.push_back(a);
+
+	// volume relatively to depth
+	ScalarSet *volumeRelativeDepth = new ScalarSet();
+	volumeRelativeDepth->name = "volume relative to depth";
+	volumeRelativeDepth->colors.resize(mMeshCenterCoordinatesNr);
+	for (unsigned i = 0; i < mMeshCenterCoordinatesNr; i++)
+	{
+		volumeRelativeDepth->colors[i] = mNodes[mMeshToBVHIndices[i]].GetBoxVolume() *
+			pow(2, mNodeDepths[mMeshToBVHIndices[i]]);
+	}
+	mScalarSets.push_back(volumeRelativeDepth);
+
+	ScalarSet *volumeVsParent = new ScalarSet();
+	volumeVsParent->name = "area of children relative to parent volume";
+	volumeVsParent->colors.resize(mMeshCenterCoordinatesNr);
+	for (unsigned i = 0; i < mMeshCenterCoordinatesNr; i++)
+	{
+		sum = 0;
+		if (mNodes[i].axis != 3)
+		{
+			for (unsigned j = 0; j < mNodes[i].children; j++)
+				sum += mNodes[mBVHToMeshIndices[mNodes[i].child + j]].GetBoxArea();
+		}
+		volumeVsParent->colors[i] = sum /
+			(mNodes[i].children * mNodes[i].GetBoxVolume());
+	}
+	mScalarSets.push_back(volumeVsParent);
+
+
+	ScalarSet *areaVsParent = new ScalarSet();
+	areaVsParent->name = "volume of children relative to parent volume";
+	areaVsParent->colors.resize(mMeshCenterCoordinatesNr);
+	for (unsigned i = 0; i < mMeshCenterCoordinatesNr; i++)
+	{
+		sum = 0;
+		if (mNodes[i].axis != 3)
+		{
+			for (unsigned j = 0; j < mNodes[i].children; j++)
+				sum += mNodes[mBVHToMeshIndices[mNodes[i].child + j]].GetBoxVolume();
+		}
+		areaVsParent->colors[i] = sum /
+			(mNodes[i].children * mNodes[i].GetBoxVolume());
+	}
+	mScalarSets.push_back(areaVsParent);
+
+
+	ScalarSet *b = new ScalarSet();
+	b->name = "triangle number";
+	b->colors.resize(mMeshCenterCoordinatesNr);
+	for (unsigned i = 0; i < mMeshCenterCoordinatesNr; i++)
+	{
+		b->colors[i] = getTriangleCount(mMeshToBVHIndices[i]);
+	}
+	mScalarSets.push_back(b);
+
+	normalizeScalarSets();
 }
 
 void BVH::normalizeScalarSets()

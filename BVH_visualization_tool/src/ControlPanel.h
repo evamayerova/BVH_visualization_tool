@@ -8,11 +8,14 @@
 #include <QHBoxLayout>
 #include <QPushButton>
 #include <QSpinBox>
+#include <QGroupBox>
+#include <QRadioButton>
+#include <QScrollArea>
 
 struct CurrentNodeStats {
 	CurrentNodeStats(QWidget *parent)
 	{
-		container = new QWidget(parent);
+		container = new QGroupBox("Selected node", parent);
 		layout = new QVBoxLayout(container);
 		index = new QLabel(container);
 		bounds = new QLabel(container);
@@ -24,7 +27,7 @@ struct CurrentNodeStats {
 
 		container->setLayout(layout);
 	}
-	QWidget *container;
+	QGroupBox *container;
 	QVBoxLayout *layout;
 	QLabel *index, *bounds, *triangleNr;
 };
@@ -32,44 +35,32 @@ struct CurrentNodeStats {
 struct CurrentTreeStats {
 	CurrentTreeStats(QWidget *parent)
 	{
-		container = new QWidget(parent);
+		container = new QGroupBox("Tree and scene stats", parent);
 		layout = new QVBoxLayout(container);
+		triangleCountLabel = new QLabel(container);
+		trianglesPerLeaf = new QLabel(container);
+		treeDepth = new QLabel(container);
 		importedBVHnodeCount = new QLabel(container);
 		realBVHnodeCount = new QLabel(container);
 
-		layout->addWidget(importedBVHnodeCount);
-		layout->addWidget(realBVHnodeCount);
-
-		container->setLayout(layout);
-	}
-	QWidget *container;
-	QVBoxLayout *layout;
-	QLabel *importedBVHnodeCount, *realBVHnodeCount;
-};
-
-struct SceneStats {
-	SceneStats(QWidget *parent)
-	{
-		container = new QWidget(parent);
-		QLabel *statsHeading = new QLabel("Scene stats", container);
-		layout = new QVBoxLayout(container);
-		triangleCountLabel = new QLabel(container);
-
-		layout->addWidget(statsHeading);
 		layout->addWidget(triangleCountLabel);
+		layout->addWidget(realBVHnodeCount);
+		layout->addWidget(importedBVHnodeCount);
+		layout->addWidget(trianglesPerLeaf);
+		layout->addWidget(treeDepth);
 
 		container->setLayout(layout);
 	}
-	QWidget *container;
+	QGroupBox *container;
 	QVBoxLayout *layout;
-	QLabel *triangleCountLabel;
+	QLabel *importedBVHnodeCount, *realBVHnodeCount, *triangleCountLabel, *trianglesPerLeaf, *treeDepth;
 };
 
 struct ScalarValuesGUI {
 	ScalarValuesGUI(QWidget *parent);
-	QWidget *container;
+	QGroupBox *container;
 	QVBoxLayout *layout;
-	QLabel *label, *localMin, *localMax;
+	QLabel *localMin, *localMax;
 	QComboBox *scalars;
 	QSlider *first, *second;
 	QPushButton *addScalarsButton;
@@ -91,13 +82,60 @@ struct TreeDepth {
 	QSpinBox *depthHolder;
 };
 
+struct BlendingType {
+
+	BlendingType(QWidget *parent) {
+		groupBox = new QGroupBox("When nodes overlap, show:", parent);
+
+		maxVal = new QRadioButton("M&aximum value");
+		minVal = new QRadioButton("M&inimum value");
+		aveVal = new QRadioButton("A&verage value");
+		topVal = new QRadioButton("T&op value");
+
+		maxVal->setChecked(true);
+
+		QVBoxLayout *l = new QVBoxLayout();
+		l->addWidget(maxVal);
+		l->addWidget(minVal);
+		l->addWidget(aveVal);
+		l->addWidget(topVal);
+
+		groupBox->setLayout(l);
+	}
+
+	QGroupBox *groupBox;
+	QRadioButton *maxVal;
+	QRadioButton *minVal;
+	QRadioButton *aveVal;
+	QRadioButton *topVal;
+};
+
+struct DisplayMode {
+
+	DisplayMode(QWidget *parent)
+	{
+		container = new QGroupBox("Display mode", parent);
+		QVBoxLayout *l = new QVBoxLayout();
+		displayModes = new QComboBox(container);
+		l->addWidget(displayModes);
+
+		container->setLayout(l);
+	}
+
+	QGroupBox *container;
+	QComboBox *displayModes;
+};
+
 class ControlPanel {
 public:
 	ControlPanel();
+
+	QScrollArea *scrollArea;
 	QWidget *container;
-	SceneStats *sceneStats;
 	CurrentTreeStats *treeStats;
 	CurrentNodeStats *currNodeStats;
 	ScalarValuesGUI *scalars;
 	TreeDepth *treeDepth;
+	BlendingType *blendingType;
+	DisplayMode *displayMode;
 };

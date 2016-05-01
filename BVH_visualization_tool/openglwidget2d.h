@@ -12,6 +12,13 @@
 #include "src\TreeRender.h"
 #include "mainwindow.h"
 
+enum BlendType {
+	maxVal, 
+	minVal, 
+	aveVal, 
+	topVal
+};
+
 class OpenGlWidget2D : public QOpenGLWidget, protected QOpenGLFunctions_4_3_Core
 {
     Q_OBJECT
@@ -29,6 +36,7 @@ public:
     virtual void mouseMoveEvent(QMouseEvent *e);
 	virtual void mouseReleaseEvent(QMouseEvent *e);
 	QVector3D getWorldCoordinates(const QPoint &p);
+	void setBlendType(BlendType t);
 
 	TreeRender *render;
 	MainWindow *mw;
@@ -45,6 +53,7 @@ private:
     QBasicTimer timer;
 	QVector3D dragStartPositionWorld;
 	bool leftMousePressed;
+	BlendType blendType;
 	//QOpenGLContext *context;
 };
 

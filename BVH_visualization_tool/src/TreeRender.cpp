@@ -1,29 +1,6 @@
 #include "TreeRender.h"
 
-#define EXPORT
-
-void TreeRender::generateScalarSets()
-{
-	// area relatively to depth
-	ScalarSet *a = new ScalarSet();
-	a->name = "relative area";
-	a->colors.resize(bvhs[currentBVHIndex]->mMeshCenterCoordinatesNr);
-	for (unsigned i = 0; i < bvhs[currentBVHIndex]->mMeshCenterCoordinatesNr; i++)
-	{
-		a->colors[i] = bvhs[currentBVHIndex]->mNodes[bvhs[currentBVHIndex]->mMeshToBVHIndices[i]].GetBoxSize() *
-			pow(2, bvhs[currentBVHIndex]->mNodeDepths[bvhs[currentBVHIndex]->mMeshToBVHIndices[i]]);
-	}
-	bvhs[currentBVHIndex]->mScalarSets.push_back(a);
-
-	ScalarSet *b = new ScalarSet();
-	b->name = "triangle number";
-	b->colors.resize(bvhs[currentBVHIndex]->mMeshCenterCoordinatesNr);
-	for (unsigned i = 0; i < bvhs[currentBVHIndex]->mMeshCenterCoordinatesNr; i++)
-	{
-		b->colors[i] = bvhs[currentBVHIndex]->getTriangleCount(bvhs[currentBVHIndex]->mMeshToBVHIndices[i]);
-	}
-	bvhs[currentBVHIndex]->mScalarSets.push_back(b);
-}
+//#define EXPORT
 
 void TreeRender::removeScalarSets()
 {
@@ -46,12 +23,14 @@ void TreeRender::exportColors(const string &fileName)
 	const uint8_t colorSetsSize = static_cast<uint8_t>(bvhs[currentBVHIndex]->mScalarSets.size() + 1);
 	outFile.write(reinterpret_cast<const char*>(&colorSetsSize), sizeof(uint8_t));
 
+	/*
 	string setName = "area";
 	size_t len = 4;
 	outFile.write(reinterpret_cast<const char*>(&len), sizeof(size_t));
 	outFile.write(reinterpret_cast<const char*>(setName.c_str()), len);
 	outFile.write(reinterpret_cast<const char*>(bvhs[currentBVHIndex]->mBoxSizes.data()),
 		actualNodeSize * sizeof(float));
+	*/
 
 	for (unsigned i = 0; i < colorSetsSize - 1; i++)
 	{
@@ -92,18 +71,33 @@ TreeRender::TreeRender(const string &sceneName) : Render(RenderType::Tree, scene
 	view.lookAt(cam.pos, cam.pos + cam.dir, cam.upVector);
 	projection.setToIdentity();
 
-	if (!initShaders(&shader, "src/shaders/conservative.vert", "src/shaders/conservative.frag", "src/shaders/conservative.geom"))
+	if (!initShaders(&solidBoxShader, "src/shaders/conservative.vert", "src/shaders/conservative.frag", "src/shaders/conservative_triangles.geom"))
 		throw "shader creation failed";
 
-	BVHDrawer *drawer = new BVHDrawer(bvhs[currentBVHIndex], &shader);
+	if (!initShaders(&lineBoxShader, "src/shaders/conservative.vert", "src/shaders/conservative.frag", "src/shaders/conservative_lines.geom"))
+		throw "shader creation failed";
+
+	/*
+	if (!initShaders(&solidRingShader, "src/shaders/conservative.vert", "src/shaders/conservative_rings.frag", "src/shaders/conservative.geom"))
+		throw "shader creation failed";
+
+	if (!initShaders(&lineRingShader, "src/shaders/conservative.vert", "src/shaders/conservative.frag", "src/shaders/conservative.geom"))
+		throw "shader creation failed";
+		*/
+
+	currentShader = &solidBoxShader;
+
+	BVHDrawer *drawer = new BVHDrawer(bvhs[currentBVHIndex], currentShader);
 
 #ifdef EXPORT
-	generateScalarSets();
+	bvhs[currentBVHIndex]->setDefaultScalars();
 	exportColors("default.scal");
 	removeScalarSets();
+	sceneImporter->loadScalars("default.scal");
+#else
+	bvhs[currentBVHIndex]->setDefaultScalars();
 #endif // EXPORT
 
-	sceneImporter->loadScalars("default.scal");
 	drawer->changeScalarSet(0);
 	drawers.push_back(drawer);
 }
@@ -113,7 +107,7 @@ void TreeRender::loadScene(const string & sceneName)
 	sc = new Scene();
 	sceneImporter = new SceneImporter(bvhs[currentBVHIndex], sc);
 	sceneImporter->loadFromBinaryFile(sceneName);
-	BVHDrawer *drawer = new BVHDrawer(bvhs[currentBVHIndex], &shader);
+	BVHDrawer *drawer = new BVHDrawer(bvhs[currentBVHIndex], currentShader);
 
 #ifdef EXPORT
 	generateScalarSets();
@@ -134,7 +128,7 @@ bool TreeRender::addBVH(const string & fileName)
 	{
 		currentBVHIndex = bvhs.size();
 
-		BVHDrawer *drawer = new BVHDrawer(bvh, &this->shader);
+		BVHDrawer *drawer = new BVHDrawer(bvh, currentShader);
 		drawers.push_back(drawer);
 
 		bvh->setDefaultScalars();
@@ -149,7 +143,7 @@ bool TreeRender::addBVH(const string & fileName)
 void TreeRender::changeTreeDepth(int newDepth, int scalarSet)
 {
 	delete drawers[currentBVHIndex];
-	drawers[currentBVHIndex] = new BVHDrawer(bvhs[currentBVHIndex], &this->shader, newDepth);
+	drawers[currentBVHIndex] = new BVHDrawer(bvhs[currentBVHIndex], currentShader, newDepth);
 	bvhs[currentBVHIndex]->setDefaultScalars();
 	bvhs[currentBVHIndex]->normalizeScalarSets();
 	drawers[currentBVHIndex]->changeScalarSet(scalarSet);
@@ -169,10 +163,10 @@ void TreeRender::draw()
 {
 	if (currentBVHIndex < drawers.size())
 	{
-		shader.bind();
+		currentShader->bind();
 		//assert(glGetError() == GL_NO_ERROR);
-		shader.setUniformValue("mvp_matrix", projection * view * model);
-		shader.setUniformValue("hPixel", hPixel);
+		currentShader->setUniformValue("mvp_matrix", projection * view * model);
+		currentShader->setUniformValue("hPixel", hPixel);
 		//assert(glGetError() == GL_NO_ERROR);
 		drawers[currentBVHIndex]->draw();
 	}
@@ -195,4 +189,30 @@ void TreeRender::displayPath(const std::vector<unsigned>& indices)
 {
 	drawers[currentBVHIndex]->clearPath();
 	drawers[currentBVHIndex]->highlightNodes(indices);
+}
+
+void TreeRender::changeCurrentShader(int current)
+{
+	switch (current) {
+	case 0:
+		currentShader = &solidBoxShader;
+		break;
+	case 1:
+		currentShader = &lineBoxShader;
+		break;
+	case 2:
+		//currentShader = &solidRingShader;
+		break;
+	case 3:
+		//currentShader = &lineRingShader;
+		break;
+	}
+
+	drawers[currentBVHIndex]->setShaderProgram(currentShader);
+}
+
+void TreeRender::changeCurrentBVH(int current)
+{
+	currentBVHIndex = current;
+	drawers[currentBVHIndex]->setShaderProgram(currentShader);
 }

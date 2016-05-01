@@ -35,10 +35,21 @@ typedef struct
 		return axis == 3;
 	}
 
-	float GetBoxSize() const {
+	float GetBoxVolume() const {
 		return ((bounds[1][0] - bounds[0][0]) *
 				(bounds[1][1] - bounds[0][1]) *
 				(bounds[1][2] - bounds[0][2])
+			);
+	}
+
+	float GetBoxArea() const {
+		float a = (bounds[1][0] - bounds[0][0]);
+		float b = (bounds[1][1] - bounds[0][1]);
+		float c = (bounds[1][2] - bounds[0][2]);
+
+		return (2 * a * b +
+			2 * a * c +
+			2 * b * c
 			);
 	}
 

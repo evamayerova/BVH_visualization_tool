@@ -9,7 +9,6 @@ public:
 	TreeRender(const string &sceneName);
 	~TreeRender();
 
-	void generateScalarSets();
 	void removeScalarSets();
 	void exportColors(const string &fileName);
 	void loadScene(const string & sceneName);
@@ -18,7 +17,11 @@ public:
 	void draw();
 	int pick(const QVector2D &point);
 	void displayPath(const std::vector<unsigned> &indices);
-	//BVHDrawer *drawer;
+	void changeCurrentShader(int current);
+	void changeCurrentBVH(int current);
+
+	QOpenGLShaderProgram solidBoxShader, lineBoxShader, solidRingShader, lineRingShader;
+	QOpenGLShaderProgram *currentShader;
 	vector<BVHDrawer*> drawers;
 	Camera cam;
 };

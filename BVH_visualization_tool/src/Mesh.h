@@ -16,10 +16,11 @@ public:
 	Mesh(QOpenGLShaderProgram *program);
 	~Mesh();
 	void drawArrays();
+	void drawArraysPoints();
 	void drawElements();
 	void setTriangles();
 
-	GLuint vao, vbo, vboC, vboN, eao;
+	GLuint vao, vbo, vboC, vboN, eao, vboW, vboH;
 	unsigned indicesNr;
 	QOpenGLShaderProgram *shaderProgram;
 };

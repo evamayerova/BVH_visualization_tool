@@ -17,10 +17,11 @@ public:
 	void showDisplayedNodes();
 	void draw() const;
 	void clearPath();
+	void setShaderProgram(QOpenGLShaderProgram *sp);
 
+	std::vector<Mesh*> meshes;
 private:
 	BVH *bvh;
-	std::vector<Mesh*> meshes;
 	QOpenGLShaderProgram *shaderProgram;
 	vector<unsigned> highlightedNodes;
 	int currentScalarSet;

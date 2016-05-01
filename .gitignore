@@ -16,3 +16,4 @@
 build*
 .gitattributes
 *.autosave
+*Makefile*

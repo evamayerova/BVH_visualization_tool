@@ -36,7 +36,9 @@ void OpenGlWidget2D::initializeGL()
 	this->makeCurrent();
 	initializeOpenGLFunctions();
 	render = NULL;
+	blendType = maxVal;
 	glClearColor(0.2, 0.2, 0.2, 1);
+	//glEnable(GL_BLEND);
 	timer.start(12, this);
 }
 
@@ -45,7 +47,26 @@ void OpenGlWidget2D::paintGL()
 	this->makeCurrent();
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	if (render)
+	{
+		/*
+		switch (blendType) {
+		case maxVal:
+			glEnablei(GL_BLEND, render->drawers[render->currentBVHIndex]->meshes[0]->vao);
+			glBlendEquationi(render->drawers[render->currentBVHIndex]->meshes[0]->vao, GL_MAX);
+			break;
+		case minVal:
+			glEnablei(GL_BLEND, render->drawers[render->currentBVHIndex]->meshes[0]->vao);
+			glBlendEquationi(render->drawers[render->currentBVHIndex]->meshes[0]->vao, GL_MIN);
+			break;
+		case aveVal:
+			break;
+		case topVal:
+			glDisablei(GL_BLEND, render->drawers[render->currentBVHIndex]->meshes[0]->vao);
+			break;
+		}
+		*/
 		render->draw();
+	}
 }
 
 void OpenGlWidget2D::resizeGL(int w, int h)
@@ -105,6 +126,11 @@ QVector3D OpenGlWidget2D::getWorldCoordinates(const QPoint &p)
 	QVector4D posWorld = posEye;
 	QVector4D posModel = render->model.inverted() * posWorld;
 	return QVector3D(posModel).normalized();
+}
+
+void OpenGlWidget2D::setBlendType(BlendType t)
+{
+	blendType = t;
 }
 
 void OpenGlWidget2D::mousePressEvent(QMouseEvent *event)

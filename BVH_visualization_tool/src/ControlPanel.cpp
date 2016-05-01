@@ -2,8 +2,7 @@
 
 ScalarValuesGUI::ScalarValuesGUI(QWidget *parent)
 {
-	container = new QWidget(parent);
-	label = new QLabel("Selected property", container);
+	container = new QGroupBox("Selected property", parent);
 	scalars = new QComboBox(container);
 
 	localMin = new QLabel(container);
@@ -27,7 +26,6 @@ ScalarValuesGUI::ScalarValuesGUI(QWidget *parent)
 	slidersHolder->setLayout(slidersWithLabels);
 
 	layout = new QVBoxLayout(container);
-	layout->addWidget(label);
 	layout->addWidget(scalars);
 	layout->addWidget(slidersHolder);
 	layout->addWidget(addScalarsButton);
@@ -37,22 +35,29 @@ ScalarValuesGUI::ScalarValuesGUI(QWidget *parent)
 
 ControlPanel::ControlPanel()
 {
+	scrollArea = new QScrollArea();
 	container = new QWidget();
-	sceneStats = new SceneStats(container);
 	treeStats = new CurrentTreeStats(container);
 	currNodeStats = new CurrentNodeStats(container);
 	scalars = new ScalarValuesGUI(container);
 	treeDepth = new TreeDepth(container);
-
+	blendingType = new BlendingType(container);
+	displayMode = new DisplayMode(container);
+	
 	QVBoxLayout *l = new QVBoxLayout();
 	l->addWidget(currNodeStats->container);
 	l->addWidget(treeStats->container);
-	//l->addWidget(currNodeStats->container);
 	l->addWidget(scalars->container);
 	l->addWidget(treeDepth->container);
+	l->addWidget(blendingType->groupBox);
+	l->addWidget(displayMode->container);
+
 	l->addSpacerItem(new QSpacerItem(10, 10, QSizePolicy::Minimum, QSizePolicy::Expanding));
-	l->addWidget(sceneStats->container);
 	container->setLayout(l);
 
 	currNodeStats->container->hide();
+
+	scrollArea->setFrameShape(QFrame::NoFrame);
+	scrollArea->setWidget(container);
+	scrollArea->setWidgetResizable(true);
 }

@@ -1,12 +1,17 @@
 #version 430
-in vec3 position;
-in vec3 color_in;
+layout(location = 0)in vec3 position;
+layout(location = 1)in float half_node_width;
+layout(location = 2)in float half_node_height;
+layout(location = 3)in float color_in;
 
 uniform mat4 mvp_matrix;
-out vec3 color_vert;
+
+out float color_vert;
+out vec2 halfDims;
 
 void main()
 {
+	halfDims = vec2(half_node_width, half_node_height);
 	color_vert = color_in;
     gl_Position = mvp_matrix * vec4(position, 1.0);
 }

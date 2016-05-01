@@ -129,6 +129,11 @@ void MainWindow::createActions()
 	connect(openBVHAct, &QAction::triggered, this, &MainWindow::addBVH);
 }
 
+void MainWindow::handleDisplayMode(int index)
+{
+	tRender->changeCurrentShader(index);
+}
+
 void MainWindow::setSliders(int stepsNr, QSlider *a, QSlider *b, QLabel *aLabel, QLabel *bLabel, int scalarSetIndex)
 {
 	float scMin = tRender->bvhs[mCurrentTab]->mScalarSets[mCurrentScalarSet]->localMin;
@@ -194,6 +199,28 @@ void MainWindow::setTreeDepthRange(QWidget *parent)
 		tRender->bvhs[mCurrentTab]->depth);
 }
 
+void MainWindow::setDisplayModes(QWidget * parent)
+{
+	disconnect(controlPanelTabs[mCurrentTab]->displayMode->displayModes);
+	controlPanelTabs[mCurrentTab]->displayMode->displayModes->clear();
+	
+	controlPanelTabs[mCurrentTab]->displayMode->displayModes->addItem(
+		QString("Solid box"));
+	controlPanelTabs[mCurrentTab]->displayMode->displayModes->addItem(
+		QString("Wired box"));
+	controlPanelTabs[mCurrentTab]->displayMode->displayModes->addItem(
+		QString("Solid ellipse"));
+	controlPanelTabs[mCurrentTab]->displayMode->displayModes->addItem(
+		QString("Wired ellipse"));
+
+
+	// handle combobox selection
+	connect(controlPanelTabs[mCurrentTab]->displayMode->displayModes,
+		SIGNAL(currentIndexChanged(int)),
+		this,
+		SLOT(handleDisplayMode(int)));
+}
+
 /*
 void MainWindow::setCurrNodeStats(QWidget *parent)
 {
@@ -215,8 +242,9 @@ void MainWindow::setCurrNodeStats(QWidget *parent)
 void MainWindow::setSceneStats()
 {
 	unsigned triangleNr = sRender->sc->mTriangles.size();
-	controlPanelTabs[mCurrentTab]->sceneStats->triangleCountLabel->setText(
+	controlPanelTabs[mCurrentTab]->treeStats->triangleCountLabel->setText(
 		"Triangle count: " + QString::number(triangleNr));
+
 }
 
 void MainWindow::connectControlPanelSignals(int index)
@@ -232,9 +260,43 @@ void MainWindow::connectControlPanelSignals(int index)
 		this,
 		SLOT(changeTreeDepth(int))
 		);
+
+
+	QSignalMapper* signalMapper = new QSignalMapper(this);
+
+	connect(controlPanelTabs[index]->blendingType->maxVal,
+		SIGNAL(toggled(bool)),
+		signalMapper,
+		SLOT(map())
+		);
+
+	connect(controlPanelTabs[index]->blendingType->minVal,
+		SIGNAL(toggled(bool)),
+		signalMapper,
+		SLOT(map())
+		);
+
+	connect(controlPanelTabs[index]->blendingType->aveVal,
+		SIGNAL(toggled(bool)),
+		signalMapper,
+		SLOT(map())
+		);
+
+	connect(controlPanelTabs[index]->blendingType->topVal,
+		SIGNAL(toggled(bool)),
+		signalMapper,
+		SLOT(map())
+		);
+
+	signalMapper->setMapping(controlPanelTabs[index]->blendingType->maxVal, 0);
+	signalMapper->setMapping(controlPanelTabs[index]->blendingType->minVal, 1);
+	signalMapper->setMapping(controlPanelTabs[index]->blendingType->aveVal, 2);
+	signalMapper->setMapping(controlPanelTabs[index]->blendingType->topVal, 3);
+
+	connect(signalMapper, SIGNAL(mapped(int)), this, SLOT(switchBlendType(int)));
 }
 
-void MainWindow::showControlPanel()
+void MainWindow::showControlPanel(const QString &builderName)
 {
 	QVBoxLayout *controlPanel = ui->controlPanel;
 
@@ -242,7 +304,7 @@ void MainWindow::showControlPanel()
 	mCurrentTab = controlPanelTabs.size();
 	controlPanelTabs.push_back(c);
 
-	tabWidget->addTab(c->container, "tab" + QString::number(mCurrentTab + 1));
+	tabWidget->addTab(c->scrollArea, builderName);
 	tabWidget->setCurrentIndex(mCurrentTab);
 
 	// scalar value buttons
@@ -250,10 +312,15 @@ void MainWindow::showControlPanel()
 		+ QString::number(tRender->bvhs[mCurrentTab]->mNodes.size()));
 	c->treeStats->realBVHnodeCount->setText(QString("Real node count: ")
 		+ QString::number(tRender->bvhs[mCurrentTab]->mMeshCenterCoordinatesNr));
+	c->treeStats->treeDepth->setText(QString("Tree depth: ") + 
+		QString::number(tRender->bvhs[mCurrentTab]->depth));
+	c->treeStats->trianglesPerLeaf->setText(QString("Triangles per leaf (average): ") +
+		QString::number(sRender->sc->mTriangles.size() / float(ceil(tRender->bvhs[mCurrentTab]->mMeshCenterCoordinatesNr / 2) + 1)));
 
 	setScalars(this);
 	setTreeDepthRange(this);
 	setSceneStats();
+	setDisplayModes(this);
 
 	resViewT->show();
 	widget3D->show();
@@ -272,29 +339,6 @@ void MainWindow::unconsistentBVHDialog()
 		"This file does not match with the current scene. If you want to load another scene, please open a new one.");
 	unconsistentBVHMessage->setStandardButtons(QMessageBox::Cancel);
 	int ret = unconsistentBVHMessage->exec();
-}
-
-void MainWindow::fillStats(QVBoxLayout * w)
-{
-	QLabel *triangleCountLabel = new QLabel(this);
-	unsigned triangleNr = sRender->sc->mTriangles.size();
-	triangleCountLabel->setText("Triangle count: " + QString::number(triangleNr));
-
-	QLabel *ibvhncl = new QLabel(this);
-	assert(tRender != NULL);
-	ibvhncl->setText("Imported BVH nodes count: " + QString::number(
-		tRender->bvhs[mCurrentTab]->mNodes.size())
-		);
-
-	QLabel *rbvhncl = new QLabel(this);
-	rbvhncl->setText("Real BVH nodes count: " + QString::number(
-		tRender->bvhs[mCurrentTab]->mMeshCenterCoordinatesNr)
-		);
-	//QSpacerItem *spacer = new QSpacerItem(10, 10, QSizePolicy::Minimum, QSizePolicy::Expanding);
-
-	w->addWidget(ibvhncl);
-	w->addWidget(rbvhncl);
-	w->addWidget(triangleCountLabel);
 }
 
 void MainWindow::PrintNodeInfo(int nodeIndex)
@@ -387,7 +431,7 @@ void MainWindow::changeTab(int current)
 
 	if (tRender && sRender)
 	{
-		tRender->currentBVHIndex = current;
+		tRender->changeCurrentBVH(current);// tRender->currentBVHIndex = current;
 		sRender->currentBVHIndex = current;
 		sRender->drawer->currentBVHIndex = current;
 	}
@@ -409,7 +453,29 @@ void MainWindow::switchCam()
 	sRender->switchCamera((sRender->currentCamera + 1) % sRender->cams.size());
 }
 
-QString extractFileName(const QString &s)
+void MainWindow::switchBlendType(int type)
+{
+	switch (type) {
+	case 0: {
+		ui->openGLWidget2D->setBlendType(maxVal);
+	}
+		break;
+	case 1: {
+		ui->openGLWidget2D->setBlendType(minVal);
+	}
+		break;
+	case 2: {
+		ui->openGLWidget2D->setBlendType(aveVal);
+	}
+		break;
+	case 3: {
+		ui->openGLWidget2D->setBlendType(topVal);
+	}
+		break;
+	}
+}
+
+QString extractRawPath(const QString &s)
 {
 	QStringList l = s.split('/');
 	if (l.size() > 1)
@@ -425,6 +491,24 @@ QString extractFileName(const QString &s)
 	return "";
 }
 
+QString extractFileName(const QString &s)
+{
+	QStringList l = s.split('/');
+	if (l.size() > 1)
+	{
+		QString fileName = l[l.size() - 1];
+		l = fileName.split('.');
+		QString rawName = l[0];
+		if (rawName.startsWith("export-")) 
+		{
+			l = rawName.split("export-");
+			rawName = l[1];
+		}
+		return rawName;
+	}
+	return "";
+}
+
 void MainWindow::openScene()
 {
 	sceneFile = QFileDialog::getOpenFileName(this,
@@ -433,14 +517,14 @@ void MainWindow::openScene()
 	if (sceneFile.isEmpty())
 		return;
 
-	QString rawFileName = extractFileName(sceneFile);
+	QString rawFileName = extractRawPath(sceneFile);
 	QString camFile = rawFileName + ".cam";
 	QString lightFile = rawFileName + ".lights";
 
 	if (!ifstream(camFile.toStdString()))
 	{
 		camFile = cameraDialog();
-		lightFile = extractFileName(camFile) + ".lights";
+		lightFile = extractRawPath(camFile) + ".lights";
 	}
 
 	resetControlPanel();
@@ -461,11 +545,13 @@ void MainWindow::addBVH()
 	BVH *bvh = ui->openGLWidget2D->addBVH(sceneFile.toStdString());
 	if (bvh)
 	{
+		QString builderName = extractFileName(sceneFile);
+
 		ui->openGLWidget3D->addBVH(
 			bvh, 
 			tRender->sc->mTriangleIdx[tRender->sc->mTriangleIdx.size() - 1]
 			);
-		showControlPanel();
+		showControlPanel(builderName);
 	}
 	else
 	{

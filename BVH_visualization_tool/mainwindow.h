@@ -47,12 +47,14 @@ protected:
 
 private slots:
 	void handleScalarButton(int index);
+	void handleDisplayMode(int index);
 	void setSliders(int stepNr, QSlider *a, QSlider *b, QLabel *aLabel, QLabel *bLabel, int scalarSetIndex);
 	void changeRange();
 	void changeTab(int current);
 	void changeTreeDepth(int newDepth);
 	void resetViewTree();
 	void switchCam();
+	void switchBlendType(int type);
 	void openScene();
 	void addBVH();
 	void addScalars();
@@ -65,12 +67,12 @@ private:
 	void connectControlPanelSignals(int index);
 	void createActions();
 	void createMenus();
-	void fillStats(QVBoxLayout *w);
 	float recalculateValue(const float &val);
 	void setScalars(QWidget *parent);
 	void setSceneStats();
 	void setTreeDepthRange(QWidget *parent);
-	void showControlPanel();
+	void setDisplayModes(QWidget *parent);
+	void showControlPanel(const QString &builderName = "tab");
 	void unconsistentBVHDialog();
 
 	Ui::MainWindow *ui;

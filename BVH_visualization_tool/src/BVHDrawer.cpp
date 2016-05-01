@@ -25,7 +25,9 @@ void BVHDrawer::draw() const
 	for (int i = 0, s = meshes.size(); i < s; i++)
 	{
 		shaderProgram->bind();
-		meshes[i]->drawElements();
+		shaderProgram->setUniformValue("colorMapMin", bvh->mScalarSets[currentScalarSet]->selectedMin);
+		shaderProgram->setUniformValue("colorMapMax", bvh->mScalarSets[currentScalarSet]->selectedMax);
+		meshes[i]->drawArraysPoints();
 	}
 }
 
@@ -34,6 +36,11 @@ void BVHDrawer::clearPath()
 	highlightedNodes.clear();
 	currentNode = -1;
 	changeScalarSet(currentScalarSet);
+}
+
+void BVHDrawer::setShaderProgram(QOpenGLShaderProgram * sp)
+{
+	shaderProgram = sp;
 }
 
 void BVHDrawer::generateMeshes()
@@ -46,10 +53,11 @@ void BVHDrawer::generateMeshes()
 	GLfloat meshHeight = 1.0 / float(bvh->depth);
 	GLfloat meshWidth = 1.0;
 	GLfloat actualDepth = bvh->mMeshCenterCoordinates[1];
-	float maxBoxSize = bvh->mNodes[0].GetBoxSize();
+	float maxBoxSize = bvh->mNodes[0].GetBoxArea();
 
 	std::vector<GLfloat> meshVertices;
 	std::vector<unsigned int> meshIndices;
+	std::vector<float> widths, heights;
 
 	unsigned mSize = 0;
 
@@ -64,7 +72,14 @@ void BVHDrawer::generateMeshes()
 		}
 
 		float resizedMeshWidth = min(meshWidth, (float)MAX_MESH_WIDTH / 2.f);
+		meshVertices.push_back(bvh->mMeshCenterCoordinates[i]);
+		meshVertices.push_back(bvh->mMeshCenterCoordinates[i + 1]);
+		meshVertices.push_back(0);
 
+		widths.push_back(resizedMeshWidth);
+		heights.push_back(meshHeight);
+
+		/*
 		meshVertices.push_back(bvh->mMeshCenterCoordinates[i] - resizedMeshWidth);
 		meshVertices.push_back(bvh->mMeshCenterCoordinates[i + 1] - meshHeight);
 		meshVertices.push_back(0.0);
@@ -80,13 +95,14 @@ void BVHDrawer::generateMeshes()
 		meshVertices.push_back(bvh->mMeshCenterCoordinates[i] - resizedMeshWidth);
 		meshVertices.push_back(bvh->mMeshCenterCoordinates[i + 1] + meshHeight);
 		meshVertices.push_back(0.0);
-
+		
 		meshIndices.push_back(mSize + 0);
 		meshIndices.push_back(mSize + 1);
 		meshIndices.push_back(mSize + 3);
 		meshIndices.push_back(mSize + 1);
 		meshIndices.push_back(mSize + 2);
 		meshIndices.push_back(mSize + 3);
+		*/
 
 		BBox b;
 		b.extremes[0] = QVector3D(bvh->mMeshCenterCoordinates[i] - resizedMeshWidth,
@@ -101,13 +117,15 @@ void BVHDrawer::generateMeshes()
 	}
 
 	Mesh *m = new Mesh(shaderProgram);
-	m->indicesNr = meshIndices.size();
+	//m->indicesNr = meshIndices.size();
+	m->indicesNr = bvh->mMeshCenterCoordinatesNr;
 
 	glGenVertexArrays(1, &m->vao);
 	assert(glGetError() == GL_NO_ERROR);
 	glBindVertexArray(m->vao);
 	assert(glGetError() == GL_NO_ERROR);
 
+	// node center position
 	glGenBuffers(1, &m->vbo);
 	assert(glGetError() == GL_NO_ERROR);
 	glBindBuffer(GL_ARRAY_BUFFER, m->vbo);
@@ -117,31 +135,63 @@ void BVHDrawer::generateMeshes()
 
 	int vertexLoc = shaderProgram->attributeLocation("position");
 	assert(glGetError() == GL_NO_ERROR);
-	shaderProgram->enableAttributeArray(vertexLoc);
+	shaderProgram->enableAttributeArray(0);
 	assert(glGetError() == GL_NO_ERROR);
-	glVertexAttribPointer(vertexLoc, 3, GL_FLOAT, GL_FALSE, 0, (void *)(0));
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void *)(0));
 	assert(glGetError() == GL_NO_ERROR);
 
+	// half node width
+	glGenBuffers(1, &m->vboW);
+	assert(glGetError() == GL_NO_ERROR);
+	glBindBuffer(GL_ARRAY_BUFFER, m->vboW);
+	assert(glGetError() == GL_NO_ERROR);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * widths.size(), widths.data(), GL_STATIC_DRAW);
+	assert(glGetError() == GL_NO_ERROR);
 
+	//int halfWidthLoc = shaderProgram->attributeLocation("half_node_width");
+	assert(glGetError() == GL_NO_ERROR);
+	shaderProgram->enableAttributeArray(1);
+	assert(glGetError() == GL_NO_ERROR);
+	glVertexAttribPointer(1, 1, GL_FLOAT, GL_FALSE, 0, (void *)(0));
+	assert(glGetError() == GL_NO_ERROR);
+	
+	// half node height
+	glGenBuffers(1, &m->vboH);
+	assert(glGetError() == GL_NO_ERROR);
+	glBindBuffer(GL_ARRAY_BUFFER, m->vboH);
+	assert(glGetError() == GL_NO_ERROR);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * heights.size(), heights.data(), GL_STATIC_DRAW);
+	assert(glGetError() == GL_NO_ERROR);
+
+	//int halfHeightLoc = shaderProgram->attributeLocation("half_node_height");
+	assert(glGetError() == GL_NO_ERROR);
+	shaderProgram->enableAttributeArray(2);
+	assert(glGetError() == GL_NO_ERROR);
+	glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, 0, (void *)(0));
+	assert(glGetError() == GL_NO_ERROR);
+	
+	/*
 	glGenBuffers(1, &m->eao);
 	assert(glGetError() == GL_NO_ERROR);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m->eao);
 	assert(glGetError() == GL_NO_ERROR);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, meshIndices.size() * sizeof(unsigned int), meshIndices.data(), GL_STATIC_DRAW);
 	assert(glGetError() == GL_NO_ERROR);
+	*/
 
 	glGenBuffers(1, &m->vboC);
 	assert(glGetError() == GL_NO_ERROR);
 	glBindBuffer(GL_ARRAY_BUFFER, m->vboC);
 	assert(glGetError() == GL_NO_ERROR);
-	glBufferData(GL_ARRAY_BUFFER, bvh->mNodes.size() * 4 * sizeof(float), NULL, GL_DYNAMIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, bvh->mMeshCenterCoordinatesNr * sizeof(float), NULL, GL_DYNAMIC_DRAW);
+	//glBufferData(GL_ARRAY_BUFFER, bvh->mNodes.size() * 4 * sizeof(float), NULL, GL_DYNAMIC_DRAW);
 	assert(glGetError() == GL_NO_ERROR);
 
 	int colorLoc = shaderProgram->attributeLocation("color_in");
 	assert(glGetError() == GL_NO_ERROR);
-	shaderProgram->enableAttributeArray(colorLoc);
+	shaderProgram->enableAttributeArray(3);
 	assert(glGetError() == GL_NO_ERROR);
-	glVertexAttribPointer(colorLoc, 3, GL_FLOAT, GL_FALSE, 0, (void *)(0));
+	glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, 0, (void *)(0));
 	assert(glGetError() == GL_NO_ERROR);
 
 	meshes.push_back(m);
@@ -155,9 +205,9 @@ void BVHDrawer::generateMeshes()
 void BVHDrawer::changeScalarSet(int index)
 {
 	currentScalarSet = index;
-	std::vector<float> meshColors;
-	colorMapping cm;
-
+	//std::vector<float> meshColors;
+	//colorMapping cm;
+	/*
 	for (int i = 0; i < bvh->mMeshCenterCoordinatesNr * 2; i += 2)
 	{
 #ifdef SHORT
@@ -176,16 +226,25 @@ void BVHDrawer::changeScalarSet(int index)
 			meshColors.push_back(res[2]);
 		}
 	}
-
+	*/
 	glBindVertexArray(meshes[0]->vao);
 	glBindBuffer(GL_ARRAY_BUFFER, meshes[0]->vboC);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, meshColors.size() * sizeof(float), meshColors.data());
+	glBufferSubData(
+		GL_ARRAY_BUFFER,
+		0, 
+		bvh->mScalarSets[index]->colors.size() * sizeof(float), 
+		bvh->mScalarSets[index]->colors.data());
+
+	//shaderProgram->setUniformValue("colorMapMin", bvh->mScalarSets[index]->selectedMin);
+	//shaderProgram->setUniformValue("colorMapMax", bvh->mScalarSets[index]->selectedMax);
+	//glBufferSubData(GL_ARRAY_BUFFER, 0, meshColors.size() * sizeof(float), meshColors.data());
 
 }
 
 void BVHDrawer::highlightNodes(const vector<unsigned> &indices)
 {
 	this->highlightedNodes = indices;
+	/*
 	std::vector<float> meshColors;
 	for (int i = 0; i < 4; i++)
 	{
@@ -193,12 +252,18 @@ void BVHDrawer::highlightNodes(const vector<unsigned> &indices)
 		meshColors.push_back(1.0);
 		meshColors.push_back(1.0);
 	}
-
+	*/
 	glBindVertexArray(meshes[0]->vao);
 	glBindBuffer(GL_ARRAY_BUFFER, meshes[0]->vboC);
+	float white = -1.f;
 	for (vector<unsigned>::const_iterator it = indices.begin(); it != indices.end(); it++)
 	{
-		glBufferSubData(GL_ARRAY_BUFFER, bvh->mBVHToMeshIndices[*it] * 4 * meshColors.size(), sizeof(float) * meshColors.size(), meshColors.data());
+		glBufferSubData(
+			GL_ARRAY_BUFFER, 
+			bvh->mBVHToMeshIndices[*it] * 4, 
+			sizeof(float), 
+			&white);
+		//glBufferSubData(GL_ARRAY_BUFFER, bvh->mBVHToMeshIndices[*it] * 4 * meshColors.size(), sizeof(float) * meshColors.size(), meshColors.data());
 	}
 }
 
@@ -222,8 +287,14 @@ void BVHDrawer::highlightNode(const unsigned &index)
 		meshColors.push_back(1.0);
 	}
 
+	float white = -1.f;
 	glBindVertexArray(meshes[0]->vao);
 	glBindBuffer(GL_ARRAY_BUFFER, meshes[0]->vboC);
-	glBufferSubData(GL_ARRAY_BUFFER, bvh->mBVHToMeshIndices[index] * 4 * meshColors.size(), sizeof(float) * meshColors.size(), meshColors.data());
+	glBufferSubData(
+		GL_ARRAY_BUFFER, 
+		bvh->mBVHToMeshIndices[index] * 4, 
+		1 * sizeof(float), 
+		&white);
+	//glBufferSubData(GL_ARRAY_BUFFER, bvh->mBVHToMeshIndices[index] * 4 * meshColors.size(), sizeof(float) * meshColors.size(), meshColors.data());
 
 }
