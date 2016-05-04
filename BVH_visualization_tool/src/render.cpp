@@ -61,19 +61,10 @@ Render::~Render()
     delete sc;
     sc = NULL;
 
-	for (vector<BVH*>::iterator it = bvhs.begin(); it != bvhs.end(); it++)
-	{
-		if (*it != NULL)
-			delete *it;
-		*it = NULL;
-	}
-
-	bvhs.clear();
-
 	delete sceneImporter;
 	sceneImporter = NULL;
 }
-
+/*
 void Render::moveView(const QVector3D &change)
 {
 	model.translate(change.x(), change.y(), 0.f);
@@ -81,7 +72,7 @@ void Render::moveView(const QVector3D &change)
 	startingPosition[1] -= change.y();
 	currentPosition = change;
 }
-
+*/
 void Render::resetView()
 {
 	// update scaling

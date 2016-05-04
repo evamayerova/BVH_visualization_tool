@@ -52,6 +52,7 @@ TreeRender::TreeRender() : Render(RenderType::Tree)
 	cam.dir = QVector3D(0, 0, -1);
 	cam.upVector = QVector3D(0, 1, 0);
 
+	size = new QSize();
 	model.setToIdentity();
 	view.lookAt(cam.pos, cam.pos + cam.dir, cam.upVector);
 	projection.setToIdentity();
@@ -67,6 +68,7 @@ TreeRender::TreeRender(const string &sceneName) : Render(RenderType::Tree, scene
 	cam.dir = QVector3D(0, 0, -1);
 	cam.upVector = QVector3D(0, 1, 0);
 
+	size = new QSize();
 	model.setToIdentity();
 	view.lookAt(cam.pos, cam.pos + cam.dir, cam.upVector);
 	projection.setToIdentity();
@@ -76,6 +78,13 @@ TreeRender::TreeRender(const string &sceneName) : Render(RenderType::Tree, scene
 
 	if (!initShaders(&lineBoxShader, "src/shaders/conservative.vert", "src/shaders/conservative.frag", "src/shaders/conservative_lines.geom"))
 		throw "shader creation failed";
+
+	if (!initShaders(&textureRenderCountsShader, "src/shaders/conservative.vert", "src/shaders/render_counts.frag", "src/shaders/conservative_triangles.geom"))
+		throw "shader creation failed";
+
+	if (!initShaders(&textureRenderValuesShader, "src/shaders/conservative.vert", "src/shaders/render_scalars.frag", "src/shaders/conservative_triangles.geom"))
+		throw "shader creation failed";
+
 
 	/*
 	if (!initShaders(&solidRingShader, "src/shaders/conservative.vert", "src/shaders/conservative_rings.frag", "src/shaders/conservative.geom"))
@@ -87,7 +96,8 @@ TreeRender::TreeRender(const string &sceneName) : Render(RenderType::Tree, scene
 
 	currentShader = &solidBoxShader;
 
-	BVHDrawer *drawer = new BVHDrawer(bvhs[currentBVHIndex], currentShader);
+	BVHDrawer *drawer = new BVHDrawer(bvhs[currentBVHIndex], currentShader, &textureRenderValuesShader, &textureRenderValuesShader);
+	drawer->setBlendMode(0);
 
 #ifdef EXPORT
 	bvhs[currentBVHIndex]->setDefaultScalars();
@@ -107,7 +117,8 @@ void TreeRender::loadScene(const string & sceneName)
 	sc = new Scene();
 	sceneImporter = new SceneImporter(bvhs[currentBVHIndex], sc);
 	sceneImporter->loadFromBinaryFile(sceneName);
-	BVHDrawer *drawer = new BVHDrawer(bvhs[currentBVHIndex], currentShader);
+	BVHDrawer *drawer = new BVHDrawer(bvhs[currentBVHIndex], currentShader, &textureRenderValuesShader, &textureRenderCountsShader);
+	drawer->setBlendMode(0);
 
 #ifdef EXPORT
 	generateScalarSets();
@@ -128,11 +139,16 @@ bool TreeRender::addBVH(const string & fileName)
 	{
 		currentBVHIndex = bvhs.size();
 
-		BVHDrawer *drawer = new BVHDrawer(bvh, currentShader);
+		BVHDrawer *drawer = new BVHDrawer(
+			bvh, currentShader, 
+			&textureRenderValuesShader, 
+			&textureRenderCountsShader);
+
 		drawers.push_back(drawer);
 
 		bvh->setDefaultScalars();
 		bvh->normalizeScalarSets();
+		drawer->setBlendMode(0);
 		drawer->changeScalarSet(0);
 		bvhs.push_back(bvh);
 		return true;
@@ -140,12 +156,27 @@ bool TreeRender::addBVH(const string & fileName)
 	return false;
 }
 
+void TreeRender::moveView(const QVector3D &change)
+{
+	model.translate(change.x(), change.y(), 0.f);
+	startingPosition[0] -= change.x() * scaleFactor;
+	startingPosition[1] -= change.y();
+	currentPosition = change;
+}
+
 void TreeRender::changeTreeDepth(int newDepth, int scalarSet)
 {
 	delete drawers[currentBVHIndex];
-	drawers[currentBVHIndex] = new BVHDrawer(bvhs[currentBVHIndex], currentShader, newDepth);
+	drawers[currentBVHIndex] = new BVHDrawer(
+		bvhs[currentBVHIndex], 
+		currentShader, 
+		&textureRenderValuesShader, 
+		&textureRenderCountsShader, 
+		newDepth);
 	bvhs[currentBVHIndex]->setDefaultScalars();
 	bvhs[currentBVHIndex]->normalizeScalarSets();
+
+	drawers[currentBVHIndex]->setBlendMode(0);
 	drawers[currentBVHIndex]->changeScalarSet(scalarSet);
 }
 
@@ -157,6 +188,14 @@ TreeRender::~TreeRender()
 		*it = NULL;
 	}
 	drawers.clear();
+
+	for (vector<BVH*>::iterator it = bvhs.begin(); it != bvhs.end(); it++)
+	{
+		if (*it != NULL)
+			delete *it;
+		*it = NULL;
+	}
+	bvhs.clear();
 }
 
 void TreeRender::draw()
@@ -167,6 +206,15 @@ void TreeRender::draw()
 		//assert(glGetError() == GL_NO_ERROR);
 		currentShader->setUniformValue("mvp_matrix", projection * view * model);
 		currentShader->setUniformValue("hPixel", hPixel);
+		
+		textureRenderCountsShader.bind();
+		textureRenderCountsShader.setUniformValue("mvp_matrix", projection * view * model);
+		textureRenderCountsShader.setUniformValue("hPixel", hPixel);
+
+		textureRenderValuesShader.bind();
+		textureRenderValuesShader.setUniformValue("mvp_matrix", projection * view * model);
+		textureRenderValuesShader.setUniformValue("hPixel", hPixel);
+		
 		//assert(glGetError() == GL_NO_ERROR);
 		drawers[currentBVHIndex]->draw();
 	}
@@ -215,4 +263,23 @@ void TreeRender::changeCurrentBVH(int current)
 {
 	currentBVHIndex = current;
 	drawers[currentBVHIndex]->setShaderProgram(currentShader);
+	drawers[currentBVHIndex]->screenSize.setWidth(size->width());
+	drawers[currentBVHIndex]->screenSize.setHeight(size->height());
+}
+
+void TreeRender::changeBlendMode(int mode)
+{
+	drawers[currentBVHIndex]->setBlendMode(mode);
+}
+
+void TreeRender::setWiewportSize(const QSize &s)
+{
+	size->setWidth(s.width());
+	size->setHeight(s.height());
+	drawers[currentBVHIndex]->reshape(s);
+}
+
+void TreeRender::setDefaultFrameBuffer(GLint fb)
+{
+	defaultFrameBuffer = fb;
 }

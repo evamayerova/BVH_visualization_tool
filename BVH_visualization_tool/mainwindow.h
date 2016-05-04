@@ -52,6 +52,7 @@ private slots:
 	void changeRange();
 	void changeTab(int current);
 	void changeTreeDepth(int newDepth);
+	void initTabWidget();
 	void resetViewTree();
 	void switchCam();
 	void switchBlendType(int type);

@@ -122,6 +122,9 @@ void SceneRender::loadScene(const string & sceneName)
 
 SceneRender::~SceneRender()
 {
+	delete bvhs[0];
+	bvhs[0] = NULL;
+	bvhs.clear();
 }
 
 void SceneRender::draw()

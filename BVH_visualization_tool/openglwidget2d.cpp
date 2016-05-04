@@ -5,6 +5,7 @@
 OpenGlWidget2D::OpenGlWidget2D(QWidget *parent) : QOpenGLWidget(parent)
 {
 	QOpenGLContext *ctx = QOpenGLContext::currentContext();
+	ctx = new QOpenGLContext();
 	QOpenGLDebugLogger *logger = new QOpenGLDebugLogger(this);
 }
 
@@ -15,7 +16,7 @@ BVH * OpenGlWidget2D::addBVH(const string &fileName)
 		return render->bvhs[render->bvhs.size() - 1];
 
 	QOpenGLContext *context = QOpenGLContext::currentContext();
-	
+	resizeGL(width(), height());
 	return NULL;
 }
 
@@ -27,6 +28,11 @@ void OpenGlWidget2D::initializeRender(const string &sceneName)
 	render->hPixel = QVector2D(1.f / width(), 1.f / height());
 	if (!render)
 		throw "No render set";
+	
+	GLint fb;
+	glGetIntegerv(GL_FRAMEBUFFER_BINDING, &fb);
+	render->setDefaultFrameBuffer(fb);
+
 	mw->AddRender(render);
 	resizeGL(width(), height());
 }
@@ -38,6 +44,7 @@ void OpenGlWidget2D::initializeGL()
 	render = NULL;
 	blendType = maxVal;
 	glClearColor(0.2, 0.2, 0.2, 1);
+	glEnable(GL_TEXTURE_2D);
 	//glEnable(GL_BLEND);
 	timer.start(12, this);
 }
@@ -48,24 +55,8 @@ void OpenGlWidget2D::paintGL()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	if (render)
 	{
-		/*
-		switch (blendType) {
-		case maxVal:
-			glEnablei(GL_BLEND, render->drawers[render->currentBVHIndex]->meshes[0]->vao);
-			glBlendEquationi(render->drawers[render->currentBVHIndex]->meshes[0]->vao, GL_MAX);
-			break;
-		case minVal:
-			glEnablei(GL_BLEND, render->drawers[render->currentBVHIndex]->meshes[0]->vao);
-			glBlendEquationi(render->drawers[render->currentBVHIndex]->meshes[0]->vao, GL_MIN);
-			break;
-		case aveVal:
-			break;
-		case topVal:
-			glDisablei(GL_BLEND, render->drawers[render->currentBVHIndex]->meshes[0]->vao);
-			break;
-		}
-		*/
 		render->draw();
+		resizeGL(width(), height());
 	}
 }
 
@@ -77,6 +68,7 @@ void OpenGlWidget2D::resizeGL(int w, int h)
 
 	glViewport(0, 0, w, h);
 	if (render) {
+		render->setWiewportSize(size());
 		render->projection.setToIdentity();
 		render->hPixel = QVector2D(1.f / width(), 1.f / height());
 	}
@@ -128,9 +120,9 @@ QVector3D OpenGlWidget2D::getWorldCoordinates(const QPoint &p)
 	return QVector3D(posModel).normalized();
 }
 
-void OpenGlWidget2D::setBlendType(BlendType t)
+void OpenGlWidget2D::setBlendType(BlendMode m)
 {
-	blendType = t;
+	render->changeBlendMode(m);
 }
 
 void OpenGlWidget2D::mousePressEvent(QMouseEvent *event)

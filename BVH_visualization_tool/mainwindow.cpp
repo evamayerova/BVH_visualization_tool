@@ -26,9 +26,7 @@ MainWindow::MainWindow(QWidget *parent) :
 	createMenus();
 
 	mCurrentTab = -1;
-	tabWidget = new QTabWidget(this);
-	connect(tabWidget, SIGNAL(currentChanged(int)), this, SLOT(changeTab(int)));
-	ui->controlPanel->addWidget(tabWidget);
+	tabWidget = NULL;
 
 	//bvh = new QWidget(this);
 	resViewT = new QPushButton("Reset view", ui->openGLWidget2D);
@@ -443,6 +441,16 @@ void MainWindow::changeTreeDepth(int newDepth)
 	tRender->changeTreeDepth(newDepth, mCurrentScalarSet);
 }
 
+void MainWindow::initTabWidget()
+{
+	if (tabWidget)
+		delete tabWidget;
+
+	tabWidget = new QTabWidget(this);
+	connect(tabWidget, SIGNAL(currentChanged(int)), this, SLOT(changeTab(int)));
+	ui->controlPanel->addWidget(tabWidget);
+}
+
 void MainWindow::resetViewTree()
 {
 	tRender->resetView();
@@ -528,6 +536,7 @@ void MainWindow::openScene()
 	}
 
 	resetControlPanel();
+	initTabWidget();
 	mCurrentTab = -1;
 
 	ui->openGLWidget2D->initializeRender(sceneFile.toStdString());
@@ -552,6 +561,7 @@ void MainWindow::addBVH()
 			tRender->sc->mTriangleIdx[tRender->sc->mTriangleIdx.size() - 1]
 			);
 		showControlPanel(builderName);
+		//controlPanelTabs[mCurrentTab]->displayMode->displayModes->set
 	}
 	else
 	{
@@ -593,7 +603,8 @@ void MainWindow::resetControlPanel()
 	}
 	mCurrentTab = -1;
 	controlPanelTabs.clear();
-	tabWidget->clear();
+	if (tabWidget)
+		tabWidget->clear();
 }
 
 void MainWindow::updateNearPlane(const double & n)

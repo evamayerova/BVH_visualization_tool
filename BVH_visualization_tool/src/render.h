@@ -35,9 +35,9 @@ public:
     ~Render();
 
 	virtual void draw() {}
+	virtual void moveView(const QVector3D &change) {}
 
 	//void loadScene(const string &sceneName);
-	void moveView(const QVector3D &change);
 	void resetView();
 	void scaleView(const float &scaleFactor);
     int initShaders(QOpenGLShaderProgram *shader_program, const char * vs, const char * fs, const char *gs = "");

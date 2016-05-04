@@ -8,10 +8,14 @@
 BVH::BVH()
 {
 	mMeshCenterCoordinates = NULL;
+	mScalarSets.clear();
 }
 
 BVH::~BVH()
 {
+	if (mNodes.size() == 0)
+		return;
+
 	if (mMeshCenterCoordinates)
 	{
 		delete[] mMeshCenterCoordinates;
@@ -265,6 +269,20 @@ void BVH::setDefaultScalars()
 	}
 	mScalarSets.push_back(areaVsParent);
 
+	ScalarSet *childSimilarity = new ScalarSet();
+	childSimilarity->name = "children-volume-similarity rate";
+	childSimilarity->colors.resize(mMeshCenterCoordinatesNr);
+	for (unsigned i = 0; i < mMeshCenterCoordinatesNr; i++)
+	{
+		sum = 0;
+		if (mNodes[i].axis != 3)
+		{
+			sum = abs(mNodes[mBVHToMeshIndices[mNodes[i].child]].GetBoxVolume() - 
+				mNodes[mBVHToMeshIndices[mNodes[i].child + 1]].GetBoxVolume());
+		}
+		childSimilarity->colors[i] = sum / mNodes[i].GetBoxVolume();
+	}
+	mScalarSets.push_back(childSimilarity);
 
 	ScalarSet *b = new ScalarSet();
 	b->name = "triangle number";
