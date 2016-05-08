@@ -236,39 +236,43 @@ void BVH::setDefaultScalars()
 	}
 	mScalarSets.push_back(volumeRelativeDepth);
 
-	ScalarSet *volumeVsParent = new ScalarSet();
-	volumeVsParent->name = "area of children relative to parent area";
-	volumeVsParent->colors.resize(mMeshCenterCoordinatesNr);
-	for (unsigned i = 0; i < mMeshCenterCoordinatesNr; i++)
-	{
-		sum = 0;
-		if (mNodes[i].axis != 3)
-		{
-			for (unsigned j = 0; j < mNodes[i].children; j++)
-				sum += mNodes[mNodes[i].child + j].GetBoxArea();
-		}
-		volumeVsParent->colors[i] = sum /
-			(mNodes[i].children * mNodes[i].GetBoxArea());
-	}
-	mScalarSets.push_back(volumeVsParent);
-
-
+	// sum of children area relative to parent area
 	ScalarSet *areaVsParent = new ScalarSet();
-	areaVsParent->name = "volume of children relative to parent volume";
+	areaVsParent->name = "sum of children area relative to parent area";
 	areaVsParent->colors.resize(mMeshCenterCoordinatesNr);
 	for (unsigned i = 0; i < mMeshCenterCoordinatesNr; i++)
 	{
 		sum = 0;
-		if (mNodes[i].axis != 3)
+		if (mNodes[mMeshToBVHIndices[i]].axis != 3)
 		{
-			for (unsigned j = 0; j < mNodes[i].children; j++)
-				sum += mNodes[mBVHToMeshIndices[mNodes[i].child + j]].GetBoxVolume();
+			for (unsigned j = 0; j < mNodes[mMeshToBVHIndices[i]].children; j++)
+				sum += mNodes[mNodes[mMeshToBVHIndices[i]].child + j].GetBoxArea();
 		}
+		qDebug() << sum /
+			(mNodes[mMeshToBVHIndices[i]].children * mNodes[mMeshToBVHIndices[i]].GetBoxArea());
 		areaVsParent->colors[i] = sum /
-			(mNodes[i].children * mNodes[i].GetBoxVolume());
+			(mNodes[mMeshToBVHIndices[i]].children * mNodes[mMeshToBVHIndices[i]].GetBoxArea());
 	}
 	mScalarSets.push_back(areaVsParent);
 
+	// sum of children volume relative to parent volume
+	ScalarSet *volumeVsParent = new ScalarSet();
+	volumeVsParent->name = "sum of children volume relative to parent volume";
+	volumeVsParent->colors.resize(mMeshCenterCoordinatesNr);
+	for (unsigned i = 0; i < mMeshCenterCoordinatesNr; i++)
+	{
+		sum = 0;
+		if (mNodes[mMeshToBVHIndices[i]].axis != 3)
+		{
+			for (unsigned j = 0; j < mNodes[mMeshToBVHIndices[i]].children; j++)
+				sum += mNodes[mNodes[mMeshToBVHIndices[i]].child + j].GetBoxVolume();
+		}
+		volumeVsParent->colors[i] = sum /
+			(mNodes[mMeshToBVHIndices[i]].children * mNodes[mMeshToBVHIndices[i]].GetBoxVolume());
+	}
+	mScalarSets.push_back(volumeVsParent);
+
+	/*
 	ScalarSet *childSimilarity = new ScalarSet();
 	childSimilarity->name = "children-volume-similarity rate";
 	childSimilarity->colors.resize(mMeshCenterCoordinatesNr);
@@ -277,12 +281,14 @@ void BVH::setDefaultScalars()
 		sum = 0;
 		if (mNodes[i].axis != 3)
 		{
-			sum = abs(mNodes[mBVHToMeshIndices[mNodes[i].child]].GetBoxVolume() - 
-				mNodes[mBVHToMeshIndices[mNodes[i].child + 1]].GetBoxVolume());
+			sum = abs(mNodes[mNodes[mBVHToMeshIndices[i]].child].GetBoxVolume() - 
+				mNodes[mNodes[mBVHToMeshIndices[i]].child + 1].GetBoxVolume());
 		}
-		childSimilarity->colors[i] = sum / mNodes[i].GetBoxVolume();
+		assert(mNodes[mMeshToBVHIndices[i]].GetBoxVolume() > 0);
+		childSimilarity->colors[i] = sum / mNodes[mMeshToBVHIndices[i]].GetBoxVolume();
 	}
 	mScalarSets.push_back(childSimilarity);
+	*/
 
 	ScalarSet *b = new ScalarSet();
 	b->name = "triangle number";

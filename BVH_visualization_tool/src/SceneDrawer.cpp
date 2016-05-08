@@ -257,6 +257,7 @@ std::vector<unsigned> SceneDrawer::getPrimitiveIndices(BVH *bvh, BVHNode *n) con
 
 void SceneDrawer::draw(QMatrix4x4 *projection, QMatrix4x4 *view, QMatrix4x4 *model, PointLight *light)
 {
+	glEnable(GL_CULL_FACE);
 	sceneShader->bind();
 	assert(glGetError() == GL_NO_ERROR);
 
@@ -276,6 +277,7 @@ void SceneDrawer::draw(QMatrix4x4 *projection, QMatrix4x4 *view, QMatrix4x4 *mod
 
 	if (showBBox) 
 	{
+		glDisable(GL_CULL_FACE);
 		bboxShader->bind();
 		assert(glGetError() == GL_NO_ERROR);
 		bboxShader->setUniformValue("mvp_matrix", *projection * *view * *model);
