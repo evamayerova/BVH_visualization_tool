@@ -1,0 +1,10 @@
+polynomial slider
+blending method - average value
+when changing tree depth, keep values set by slider
+update node width when scrolling at 2D view
+move the scene
+update the combobox with shaders when 
+  - add new BVH
+  - change value in another BVH
+clean all resources
+   

@@ -237,7 +237,7 @@ void BVH::setDefaultScalars()
 	mScalarSets.push_back(volumeRelativeDepth);
 
 	ScalarSet *volumeVsParent = new ScalarSet();
-	volumeVsParent->name = "area of children relative to parent volume";
+	volumeVsParent->name = "area of children relative to parent area";
 	volumeVsParent->colors.resize(mMeshCenterCoordinatesNr);
 	for (unsigned i = 0; i < mMeshCenterCoordinatesNr; i++)
 	{
@@ -245,10 +245,10 @@ void BVH::setDefaultScalars()
 		if (mNodes[i].axis != 3)
 		{
 			for (unsigned j = 0; j < mNodes[i].children; j++)
-				sum += mNodes[mBVHToMeshIndices[mNodes[i].child + j]].GetBoxArea();
+				sum += mNodes[mNodes[i].child + j].GetBoxArea();
 		}
 		volumeVsParent->colors[i] = sum /
-			(mNodes[i].children * mNodes[i].GetBoxVolume());
+			(mNodes[i].children * mNodes[i].GetBoxArea());
 	}
 	mScalarSets.push_back(volumeVsParent);
 

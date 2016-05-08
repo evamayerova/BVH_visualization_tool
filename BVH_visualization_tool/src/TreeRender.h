@@ -33,6 +33,7 @@ public:
 
 private:
 	GLint defaultFrameBuffer;
+	int drawMode;
 	QSize *size;
 };
 

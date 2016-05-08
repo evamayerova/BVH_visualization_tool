@@ -23,11 +23,23 @@ BVHDrawer::BVHDrawer(BVH *b, QOpenGLShaderProgram *sp, QOpenGLShaderProgram *val
 
 BVHDrawer::~BVHDrawer()
 {
+	for (std::vector<Mesh*>::iterator it = meshes.begin(); it != meshes.end(); it++)
+	{
+		delete *it;
+		*it = NULL;
+	}
+
+	bvh = NULL;
+
 	shaderProgram = NULL;
 	textureRenderCountsShader = NULL;
 	textureRenderValuesShader = NULL;
-	glDeleteRenderbuffers(1, &textureCounts);
-	glDeleteRenderbuffers(1, &textureValues);
+
+	textureRenderCountsShader = NULL;
+	textureRenderValuesShader = NULL;
+
+	glDeleteTextures(1, &textureCounts);
+	glDeleteTextures(1, &textureValues);
 
 	glDeleteFramebuffers(1, &fboCounts);
 	glDeleteFramebuffers(1, &fboValues);

@@ -68,6 +68,7 @@ TreeRender::TreeRender(const string &sceneName) : Render(RenderType::Tree, scene
 	cam.dir = QVector3D(0, 0, -1);
 	cam.upVector = QVector3D(0, 1, 0);
 
+	drawMode = 0;
 	size = new QSize();
 	model.setToIdentity();
 	view.lookAt(cam.pos, cam.pos + cam.dir, cam.upVector);
@@ -85,14 +86,11 @@ TreeRender::TreeRender(const string &sceneName) : Render(RenderType::Tree, scene
 	if (!initShaders(&textureRenderValuesShader, "src/shaders/conservative.vert", "src/shaders/render_scalars.frag", "src/shaders/conservative_triangles.geom"))
 		throw "shader creation failed";
 
-
-	/*
-	if (!initShaders(&solidRingShader, "src/shaders/conservative.vert", "src/shaders/conservative_rings.frag", "src/shaders/conservative.geom"))
+	if (!initShaders(&solidRingShader, "src/shaders/conservative.vert", "src/shaders/conservative.frag", "src/shaders/conservative_ellipse_filled.geom"))
 		throw "shader creation failed";
 
-	if (!initShaders(&lineRingShader, "src/shaders/conservative.vert", "src/shaders/conservative.frag", "src/shaders/conservative.geom"))
+	if (!initShaders(&lineRingShader, "src/shaders/conservative.vert", "src/shaders/conservative.frag", "src/shaders/conservative_ellipse.geom"))
 		throw "shader creation failed";
-		*/
 
 	currentShader = &solidBoxShader;
 
@@ -196,6 +194,9 @@ TreeRender::~TreeRender()
 		*it = NULL;
 	}
 	bvhs.clear();
+	currentShader = NULL;
+	delete size;
+	size = NULL;
 }
 
 void TreeRender::draw()
@@ -216,6 +217,15 @@ void TreeRender::draw()
 		textureRenderValuesShader.setUniformValue("hPixel", hPixel);
 		
 		//assert(glGetError() == GL_NO_ERROR);
+		if (drawMode == 2)
+		{
+			lineRingShader.bind();
+			lineRingShader.setUniformValue("mvp_matrix", projection * view * model);
+			lineRingShader.setUniformValue("hPixel", hPixel);
+			drawers[currentBVHIndex]->draw();
+			currentShader->bind();
+		}
+
 		drawers[currentBVHIndex]->draw();
 	}
 }
@@ -243,19 +253,20 @@ void TreeRender::changeCurrentShader(int current)
 {
 	switch (current) {
 	case 0:
+
 		currentShader = &solidBoxShader;
 		break;
 	case 1:
 		currentShader = &lineBoxShader;
 		break;
 	case 2:
-		//currentShader = &solidRingShader;
+		currentShader = &solidRingShader;
 		break;
 	case 3:
-		//currentShader = &lineRingShader;
+		currentShader = &lineRingShader;
 		break;
 	}
-
+	drawMode = current;
 	drawers[currentBVHIndex]->setShaderProgram(currentShader);
 }
 

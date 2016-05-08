@@ -3,4 +3,6 @@
 
 Scene::~Scene()
 {
+	mTriangles.clear();
+	mTriangleIdx.clear();
 }

@@ -54,6 +54,7 @@ void OpenGlWidget3D::initializeGL()
 	render = NULL;
 	glClearColor(0.2, 0.2, 0.2, 1);
 	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_CULL_FACE);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	timer.start(12, this);

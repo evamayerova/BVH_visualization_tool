@@ -122,6 +122,15 @@ void SceneRender::loadScene(const string & sceneName)
 
 SceneRender::~SceneRender()
 {
+	delete drawer;
+	drawer = NULL;
+
+	for (std::vector<Camera*>::iterator it = cams.begin(); it != cams.end(); it++)
+	{
+		delete *it;
+		*it = NULL;
+	}
+
 	delete bvhs[0];
 	bvhs[0] = NULL;
 	bvhs.clear();

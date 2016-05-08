@@ -19,6 +19,15 @@ SceneDrawer::SceneDrawer(Scene *sc, QOpenGLShaderProgram *sceneShader, QOpenGLSh
 
 SceneDrawer::~SceneDrawer()
 {
+	delete sceneMesh;
+	sceneMesh = NULL;
+
+	delete bboxMesh;
+	bboxMesh = NULL;
+
+	scene = NULL;
+	sceneShader = NULL;
+	bboxShader = NULL;
 }
 
 void SceneDrawer::setSceneBuffers()

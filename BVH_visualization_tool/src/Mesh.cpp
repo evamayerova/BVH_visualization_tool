@@ -20,7 +20,11 @@ Mesh::~Mesh()
 	assert(glGetError() == GL_NO_ERROR);
 	glDeleteBuffers(1, &eao);
 	assert(glGetError() == GL_NO_ERROR);
-	vao = vbo = vboC = vboN = eao = 0;
+	glDeleteBuffers(1, &vboW);
+	assert(glGetError() == GL_NO_ERROR);
+	glDeleteBuffers(1, &vboH);
+	assert(glGetError() == GL_NO_ERROR);
+	vao = vbo = vboC = vboN = eao = vboW = vboH = 0;
 }
 
 void Mesh::drawElements()
