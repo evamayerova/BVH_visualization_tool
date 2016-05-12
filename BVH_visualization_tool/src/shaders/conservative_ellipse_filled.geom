@@ -19,6 +19,12 @@ void main()
 	for (int i = 1; i <= 16; i++) {
         ang = PI * 2.0 / 16.0 * i;
         vec4 offset = vec4(cos(ang) * halfDims[0][0] * 0.5, -sin(ang) * halfDims[0][1], 0.0, 0.0);
+		
+		if (offset[0] <= 0)
+			offset[0] -= hPixel[0];
+		else if (offset[0] > 0)
+			offset[0] += hPixel[0];
+
         gl_Position = gl_in[0].gl_Position + lastOffset;
 		EmitVertex();
 		gl_Position = gl_in[0].gl_Position + offset;
