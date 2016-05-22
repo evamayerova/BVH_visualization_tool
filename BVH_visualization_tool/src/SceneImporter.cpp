@@ -22,11 +22,11 @@ void SceneImporter::loadFromBinaryFile(const std::string& fileName)
 	in.read(reinterpret_cast<char*>(&toSkip), sizeof(uint32_t));
 	in.read(reinterpret_cast<char*>(&toSkip), sizeof(uint32_t));
 
-	// skip builder name
+	// read builder name
 	in.read(reinterpret_cast<char*>(&toSkip), sizeof(uint32_t));
 	char* buffer = new char[toSkip];
 	in.read(buffer, toSkip*sizeof(char));
-	//mBuilderName.assign(buffer);
+	bvh->builderName = string(buffer);
 	delete[] buffer;
 
 	// Read triangles
@@ -35,8 +35,6 @@ void SceneImporter::loadFromBinaryFile(const std::string& fileName)
 	sc->mTriangles.resize(geometrySize);
 	in.read(reinterpret_cast<char*>(sc->mTriangles.data()),
 		geometrySize * sizeof(Triangle));
-
-	qDebug() << sizeof(Triangle);
 
 	// Read indices  
 	uint32_t indexSize;
@@ -57,9 +55,6 @@ void SceneImporter::loadFromBinaryFile(const std::string& fileName)
 
 
 	in.close();
-
-	qDebug() << "Done.\n";
-
 }
 
 //-----------------------------------------
@@ -113,6 +108,7 @@ bool SceneImporter::loadScalars(const string &fileName)
 	}
 	
 	inFile.close();
+	return true;
 }
 
 bool SceneImporter::loadBVH(BVH *b, const string & fileName)
@@ -130,11 +126,11 @@ bool SceneImporter::loadBVH(BVH *b, const string & fileName)
 	in.read(reinterpret_cast<char*>(&toSkip), sizeof(uint32_t));
 	in.read(reinterpret_cast<char*>(&toSkip), sizeof(uint32_t));
 
-	// skip builder name
+	// read builder name
 	in.read(reinterpret_cast<char*>(&toSkip), sizeof(uint32_t));
 	char* buffer = new char[toSkip];
 	in.read(buffer, toSkip*sizeof(char));
-	//mBuilderName.assign(buffer);
+	b->builderName = string(buffer);
 	delete[] buffer;
 
 	// Read triangles
@@ -147,8 +143,6 @@ bool SceneImporter::loadBVH(BVH *b, const string & fileName)
 
 	if (memcmp(tmpTriangles.data(), sc->mTriangles.data(), geometrySize * sizeof(Triangle)) != 0)
 		return false;
-
-	qDebug() << sizeof(Triangle);
 
 	// Read indices  
 	uint32_t indexSize;
@@ -167,8 +161,5 @@ bool SceneImporter::loadBVH(BVH *b, const string & fileName)
 		nodeSize * sizeof(BVHNode));
 
 	in.close();
-
-	qDebug() << "Done.\n";
-
 	return true;
 }

@@ -1,5 +1,9 @@
 #include "OpenGlWidget3D.h"
 
+#ifdef RESPONSE_TIMES
+#include <time.h>
+#endif 
+
 OpenGlWidget3D::OpenGlWidget3D(QWidget *parent) : QOpenGLWidget(parent)
 {
 	QOpenGLContext *ctx = QOpenGLContext::currentContext();
@@ -34,6 +38,24 @@ void OpenGlWidget3D::initializeRender(const string &sceneName, const string &cam
 	this->makeCurrent();
 	delete render;
 	render = new SceneRender(sceneName, camFile, lightsFile);
+	render->hPixel = QVector2D(1.f / width(), 1.f / height());
+	if (!render)
+		throw "No render set";
+	farPlane = 5 *
+		max(
+			max(render->bvhs[0]->mNodes[0].bounds[1][0] - render->bvhs[0]->mNodes[0].bounds[0][0],
+				render->bvhs[0]->mNodes[0].bounds[1][1] - render->bvhs[0]->mNodes[0].bounds[0][1]),
+			render->bvhs[0]->mNodes[0].bounds[1][2] - render->bvhs[0]->mNodes[0].bounds[0][2]);
+
+	resizeGL(width(), height());
+	mw->AddRender(render);
+}
+
+void OpenGlWidget3D::initializeRender(Render * r, const string & camFile, const string & lightsFile)
+{
+	this->makeCurrent();
+	delete render;
+	render = new SceneRender(r, camFile, lightsFile);
 	render->hPixel = QVector2D(1.f / width(), 1.f / height());
 	if (!render)
 		throw "No render set";
@@ -83,6 +105,8 @@ void OpenGlWidget3D::paintGL()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	if (render)
 		render->draw();
+
+	this->update();
 }
 
 void OpenGlWidget3D::setNearPlane(const float &n)
@@ -141,11 +165,11 @@ void OpenGlWidget3D::wheelEvent(QWheelEvent * event)
 	int numSteps = numDegrees / 15;
 
 	if (event->orientation() == Qt::Horizontal) {
-		qDebug() << "horizontal, numSteps " << numSteps;
 		//scrollHorizontally(numSteps);
 	}
 	else {
-		qDebug() << "vertical, numSteps " << numSteps;
+		float mult = farPlane / NUMBER_OF_SCROLL_STEPS;
+		numSteps *= mult;
 		render->scrollView(numSteps);
 		//render->view.scale(numSteps >= 0 ? numSteps : 1/(-numSteps));
 	}
@@ -162,29 +186,56 @@ void OpenGlWidget3D::mousePressEvent(QMouseEvent *event)
 	switch (event->button()) {
 	case Qt::LeftButton:
 	{
-		// picking
-		QVector3D dnc; // device normalized coordinates
-		dnc[0] = event->pos().x() * 2 / float(winWidth) - 1;
-		dnc[1] = 1 - event->pos().y() * 2 / float(winHeight);
-		dnc[2] = 1.f;
+		QPoint p = event->pos();
 
-		QVector3D rayPosEye(0.f, 0.f, 0.f);
-		QVector3D rayPosWorld = QVector3D(render->view.inverted() * QVector4D(rayPosEye, 1.0));
+#ifdef RESPONSE_TIMES
+		srand(time(NULL));
+		QElapsedTimer t;
+		qint64 totalTime = 0;
+		int nrOfIterations = 50;
+		int i = 0;
 
-		QVector4D rayDirClip(dnc[0], dnc[1], -1.f, 1.f);
-		QVector4D rayDirEye = render->projection.inverted() * rayDirClip;
-		rayDirEye = QVector4D(rayDirEye[0], rayDirEye[1], -1.f, 0.f);
-		QVector3D rayDirWorld = QVector3D(render->view.inverted() * rayDirEye).normalized();
+		while (i < nrOfIterations)
+		{
+			p.setX(rand() % winWidth);
+			p.setY(rand() % winHeight);
+			t.start();
+#endif
+			// picking
+			QVector3D dnc; // device normalized coordinates
+			dnc[0] = p.x() * 2 / float(winWidth) - 1;
+			dnc[1] = 1 - p.y() * 2 / float(winHeight);
+			dnc[2] = 1.f;
 
-		QVector3D rayPosModel = QVector3D(render->model.inverted() * rayPosWorld);
-		QVector3D rayDirModel = QVector3D(render->model.inverted() * rayDirWorld);
+			QVector3D rayPosEye(0.f, 0.f, 0.f);
+			QVector3D rayPosWorld = QVector3D(render->view.inverted() * QVector4D(rayPosEye, 1.0));
 
-		ray *r = new ray(rayPosModel, rayDirModel);
+			QVector4D rayDirClip(dnc[0], dnc[1], -1.f, 1.f);
+			QVector4D rayDirEye = render->projection.inverted() * rayDirClip;
+			rayDirEye = QVector4D(rayDirEye[0], rayDirEye[1], -1.f, 0.f);
+			QVector3D rayDirWorld = QVector3D(render->view.inverted() * rayDirEye).normalized();
 
-		qDebug() << "pos " << rayPosWorld;
-		qDebug() << "direction " << rayDirWorld;
-		render->pick(*r);
-		mw->DisplayBVHPath(r->BVHListNode);
+			QVector3D rayPosModel = QVector3D(render->model.inverted() * rayPosWorld);
+			QVector3D rayDirModel = QVector3D(render->model.inverted() * rayDirWorld);
+
+			ray *r = new ray(rayPosModel, rayDirModel);
+			render->pick(*r);
+			mw->DisplayBVHPath(r->BVHListNode);
+
+#ifdef RESPONSE_TIMES
+			if (r->BVHListNode == -1)
+				continue;
+			
+			qint64 elapsed = t.elapsed();
+			totalTime += elapsed;
+			i++;
+		}
+
+		std::ofstream measures;
+		measures.open(measureFileName, std::ios::app);
+		measures << totalTime / nrOfIterations << " & " ;
+		measures.close();
+#endif
 	}
 	break;
 	case Qt::RightButton:
@@ -192,7 +243,6 @@ void OpenGlWidget3D::mousePressEvent(QMouseEvent *event)
 		// Moving the view
 		dragStartPosition = event->pos();
 		mousePressed = true;
-		qDebug() << "drag and drop, start: " << dragStartPosition;
 	}
 	break;
 	case Qt::MiddleButton:

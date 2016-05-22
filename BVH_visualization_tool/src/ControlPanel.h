@@ -11,6 +11,7 @@
 #include <QGroupBox>
 #include <QRadioButton>
 #include <QScrollArea>
+#include <QDoubleSpinBox>
 
 struct CurrentNodeStats {
 	CurrentNodeStats(QWidget *parent)
@@ -63,6 +64,8 @@ struct ScalarValuesGUI {
 	QLabel *localMin, *localMax;
 	QComboBox *scalars;
 	QSlider *first, *second;
+	QLabel *polynomDegreeLabel;
+	QDoubleSpinBox *polynomDegree;
 	QPushButton *addScalarsButton;
 };
 
@@ -126,6 +129,13 @@ struct DisplayMode {
 	QComboBox *displayModes;
 };
 
+struct ScreenShots {
+	ScreenShots(QWidget *parent);
+	QWidget *container;
+	QPushButton *topScreen;
+	QPushButton *bottomScreen;
+};
+
 class ControlPanel {
 public:
 	ControlPanel();
@@ -138,4 +148,5 @@ public:
 	TreeDepth *treeDepth;
 	BlendingType *blendingType;
 	DisplayMode *displayMode;
+	ScreenShots *screenShots;
 };

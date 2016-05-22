@@ -27,6 +27,27 @@ SceneRender::SceneRender() : Render(RenderType::SceneView)
 	drawer = NULL;
 }
 
+SceneRender::SceneRender(Render * r, const string & camFile, const string & lightsFile) : Render(RenderType::SceneView, *r)
+{
+	currentCamera = 0;
+	loadCameras(camFile);
+	loadLights(lightsFile);
+	currCam.pos = QVector3D(cams[currentCamera]->pos);
+	currCam.dir = QVector3D(cams[currentCamera]->dir);
+	currCam.upVector = QVector3D(cams[currentCamera]->upVector);
+
+	model.setToIdentity();
+	view.lookAt(currCam.pos, currCam.pos + currCam.dir, currCam.upVector);
+
+	if (!initShaders(&shader, "src/shaders/scene.vert", "src/shaders/scene.frag"))
+		throw "shader creation failed";
+
+	if (!initShaders(&bboxShader, "src/shaders/bbox.vert", "src/shaders/bbox.frag"))
+		throw "shader creation failed";
+
+	drawer = new SceneDrawer(sc, &shader, &bboxShader);
+}
+
 void SceneRender::switchCamera(int camIndex)
 {
 	assert(camIndex < cams.size() && camIndex >= 0);
@@ -61,7 +82,6 @@ void SceneRender::loadCameras(const string &camFilePath)
 			&cam->dir[0], &cam->dir[1], &cam->dir[2],
 			&cam->upVector[0], &cam->upVector[1], &cam->upVector[2]);
 		cams.push_back(cam);
-		qDebug() << QString::fromStdString(line);
 	}
 	
 }
@@ -82,7 +102,6 @@ void SceneRender::loadLights(const string &lightsFilePath)
 		sscanf(line.c_str(), "%f %f %f %f %f %f",
 			&light.position[0], &light.position[1], &light.position[2],
 			&light.diffuse[0], &light.diffuse[1], &light.diffuse[2]);
-		qDebug() << QString::fromStdString(line);
 	}
 
 }
@@ -125,15 +144,17 @@ SceneRender::~SceneRender()
 	delete drawer;
 	drawer = NULL;
 
+	delete sc;
+	sc = NULL;
+
+	delete sceneImporter;
+	sceneImporter = NULL;
+
 	for (std::vector<Camera*>::iterator it = cams.begin(); it != cams.end(); it++)
 	{
 		delete *it;
 		*it = NULL;
 	}
-
-	delete bvhs[0];
-	bvhs[0] = NULL;
-	bvhs.clear();
 }
 
 void SceneRender::draw()
@@ -144,20 +165,20 @@ void SceneRender::draw()
 	}
 }
 
-int SceneRender::pick(ray &r)
+bool SceneRender::pick(ray &r)
 {
-	if (castRay(&bvhs[currentBVHIndex]->mNodes[0], 0, r))
-		return 1;
-
-	return 0;
+	return castRay(&bvhs[currentBVHIndex]->mNodes[0], 0, r);
 }
 
 void SceneRender::scrollView(int numSteps)
 {
-	qDebug() << numSteps;
 	currCam.pos += numSteps * 0.1f * currCam.dir;
 	view.setToIdentity();
 	view.lookAt(currCam.pos, currCam.pos + currCam.dir, currCam.upVector);
+}
+
+void SceneRender::screenshot(const string & outputFile)
+{
 }
 
 const bool SceneRender::castRay(BVHNode *node, unsigned nodeIndex, ray & r)
@@ -171,8 +192,10 @@ const bool SceneRender::castRay(BVHNode *node, unsigned nodeIndex, ray & r)
 		else {
 			drawer->setBBoxVertices(bvhs[currentBVHIndex], node);
 			for (unsigned i = 0; i < node->children; i++) {
-				if (rayTriangle(r, &sc->mTriangles[sc->mTriangleIdx[currentBVHIndex][node->child + i]]))
+				if (rayTriangle(r, &sc->mTriangles[sc->mTriangleIdx[currentBVHIndex][node->child + i]])) {
 					r.BVHListNode = nodeIndex;
+					break;
+				}
 			}
 		}
 	}

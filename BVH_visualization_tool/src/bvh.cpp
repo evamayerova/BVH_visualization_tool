@@ -248,8 +248,6 @@ void BVH::setDefaultScalars()
 			for (unsigned j = 0; j < mNodes[mMeshToBVHIndices[i]].children; j++)
 				sum += mNodes[mNodes[mMeshToBVHIndices[i]].child + j].GetBoxArea();
 		}
-		qDebug() << sum /
-			(mNodes[mMeshToBVHIndices[i]].children * mNodes[mMeshToBVHIndices[i]].GetBoxArea());
 		areaVsParent->colors[i] = sum /
 			(mNodes[mMeshToBVHIndices[i]].children * mNodes[mMeshToBVHIndices[i]].GetBoxArea());
 	}

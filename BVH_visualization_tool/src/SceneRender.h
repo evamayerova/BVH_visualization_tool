@@ -6,6 +6,7 @@ class SceneRender :
 {
 public:
 	SceneRender();
+	SceneRender(Render *r, const string &camFile = "", const string &lightsFile = "");
 	SceneRender(const string &sceneName, const string &camFile = "", const string &lightsFile = "");
 	~SceneRender();
 
@@ -19,8 +20,9 @@ public:
 	void removeBBox();
 	void loadScene(const string & sceneName);
 	void draw();
-	int pick(ray &r);
+	bool pick(ray &r);
 	void scrollView(int numSteps);
+	void screenshot(const string &outputFile);
 
 	int currentCamera;
 	vector<Camera*> cams;

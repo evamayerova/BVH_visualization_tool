@@ -2,6 +2,7 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
+
 MainWindow::MainWindow(QWidget *parent) :
 	QMainWindow(parent),
 	ui(new Ui::MainWindow)
@@ -19,6 +20,8 @@ MainWindow::MainWindow(QWidget *parent) :
 	this->tRender = NULL;
 	this->sRender = NULL;
 	addScalarsButton = NULL;
+
+	polynomDegree = 1.0;
 
 	bvh = NULL;
 
@@ -67,6 +70,24 @@ MainWindow::MainWindow(QWidget *parent) :
 
 	widget3D->hide();
 
+#ifdef LOADING_TIMES
+	std::ofstream measures;
+	measures.open(measureFileName, std::ios::app);
+	measures << endl << "\\begin{table}\\centering" << endl;
+	measures << "\\caption{Initial loading times (ms)}" << endl;
+	measures << "\\begin{tabular}{|c||c|c|c|c|}" << endl;
+	measures << "\\hline" << endl << "scene name & file loading & generating nodes & creating scalar sets & total time \\\\" << endl << "\\hline" << endl;
+	measures.close();
+#endif
+#ifdef RESPONSE_TIMES
+	std::ofstream measures;
+	measures.open(measureFileName, std::ios::app);
+	measures << endl << "\\begin{table}\\centering" << endl;
+	measures << "\\caption{Response times (ms)}" << endl;
+	measures << "\\begin{tabular}{|c||c|c|}" << endl;
+	measures << "\\hline" << endl << "scene name & pick triangle & pick node \\\\" << endl << "\\hline" << endl;
+	measures.close();
+#endif
 }
 
 MainWindow::~MainWindow()
@@ -80,14 +101,14 @@ void MainWindow::AddRender(SceneRender *r)
 	farPlane->setRange(ui->openGLWidget3D->getNearPlane(), 2 * ui->openGLWidget3D->getFarPlane());
 	farPlane->setValue(ui->openGLWidget3D->getFarPlane());
 	if (this->tRender)
-		showControlPanel();
+		showControlPanel(QString::fromStdString(r->bvhs[r->currentBVHIndex]->builderName));
 }
 
 void MainWindow::AddRender(TreeRender *r)
 {
 	this->tRender = r;
 	if (this->sRender)
-		showControlPanel();
+		showControlPanel(QString::fromStdString(r->bvhs[r->currentBVHIndex]->builderName));
 }
 
 QString MainWindow::cameraDialog()
@@ -148,6 +169,15 @@ void MainWindow::setSliders(int stepsNr, QSlider *a, QSlider *b, QLabel *aLabel,
 	b->setRange(0, stepsNr);
 	a->setValue(0);
 	b->setValue(stepsNr);
+}
+
+void MainWindow::changePolynomDegree(double value)
+{
+	polynomDegree = value;
+	tRender->polynomDegree = value;
+
+	tRender->drawers[mCurrentTab]->changeScalarSet(mCurrentScalarSet, polynomDegree);
+	tRender->drawers[mCurrentTab]->showDisplayedNodes();
 }
 
 void MainWindow::setScalars(QWidget *parent)
@@ -292,6 +322,18 @@ void MainWindow::connectControlPanelSignals(int index)
 	signalMapper->setMapping(controlPanelTabs[index]->blendingType->topVal, 3);
 
 	connect(signalMapper, SIGNAL(mapped(int)), this, SLOT(switchBlendType(int)));
+
+	connect(controlPanelTabs[index]->scalars->polynomDegree,
+		SIGNAL(valueChanged(double)),
+		this,
+		SLOT(changePolynomDegree(double))
+		);
+
+	connect(controlPanelTabs[index]->screenShots->topScreen,
+		SIGNAL(released()),
+		this,
+		SLOT(topScreenshot())
+		);
 }
 
 void MainWindow::showControlPanel(const QString &builderName)
@@ -345,7 +387,7 @@ void MainWindow::PrintNodeInfo(int nodeIndex)
 	{
 		controlPanelTabs[mCurrentTab]->currNodeStats->container->hide();
 		sRender->removeBBox();
-		tRender->drawers[mCurrentTab]->clearPath();
+		tRender->drawers[mCurrentTab]->clearPath(polynomDegree);
 	}
 	else
 	{
@@ -364,7 +406,7 @@ void MainWindow::PrintNodeInfo(int nodeIndex)
 			"triangles: " + QString::number(tRender->bvhs[mCurrentTab]->getTriangleCount(nodeIndex)));
 		controlPanelTabs[mCurrentTab]->currNodeStats->container->show();
 
-		tRender->drawers[mCurrentTab]->changeScalarSet(mCurrentScalarSet);
+		tRender->drawers[mCurrentTab]->changeScalarSet(mCurrentScalarSet, polynomDegree);
 		tRender->drawers[mCurrentTab]->highlightNode(nodeIndex);
 		sRender->addBBox(n);
 	}
@@ -386,7 +428,7 @@ void MainWindow::DisplayBVHPath(int nodeIndex)
 		current = tRender->bvhs[mCurrentTab]->mNodeParents[current];
 	}
 
-	tRender->drawers[mCurrentTab]->changeScalarSet(mCurrentScalarSet);
+	tRender->drawers[mCurrentTab]->changeScalarSet(mCurrentScalarSet, polynomDegree);
 	tRender->displayPath(toDisplay);
 }
 
@@ -398,11 +440,14 @@ void MainWindow::contextMenuEvent(QContextMenuEvent * event)
 
 float MainWindow::recalculateValue(const float &val)
 {
-	return mSliderStepMult * val + mSliderStepAdd;
+	float resizedVal = pow(val, polynomDegree) / pow(100, polynomDegree - 1);
+
+	return mSliderStepMult * resizedVal + mSliderStepAdd;
 }
 
 void MainWindow::changeRange()
 {
+	//qDebug() << 
 	//float a = pow(1.05, scalarsGUI.first->value()) / scalarMax * tRender->bvh->mScalarSets[mCurrentScalarSet]->localMax;
 	//float b = pow(1.05, scalarsGUI.second->value()) / scalarMax * tRender->bvh->mScalarSets[mCurrentScalarSet]->localMax;
 	//qDebug() << scalarMax << pow(1.05, scalarsGUI.second->value()) / scalarMax << pow(1.05, scalarsGUI.second->value()) / scalarMax * tRender->bvh->mScalarSets[mCurrentScalarSet]->localMax;
@@ -417,7 +462,7 @@ void MainWindow::changeRange()
 		QString::number(max(a, b), 'f', 2));
 
 	tRender->bvhs[mCurrentTab]->normalizeScalarSet(mCurrentScalarSet, min(a, b), max(a, b));
-	tRender->drawers[mCurrentTab]->changeScalarSet(mCurrentScalarSet);
+	tRender->drawers[mCurrentTab]->changeScalarSet(mCurrentScalarSet, polynomDegree);
 	tRender->drawers[mCurrentTab]->showDisplayedNodes();
 }
 
@@ -524,6 +569,10 @@ void MainWindow::openScene()
 
 	if (sceneFile.isEmpty())
 		return;
+	/*
+	QProgressDialog progress("Copying files...", "Abort Copy", 0, 100, this);
+	progress.setWindowModality(Qt::WindowModal);
+	*/
 
 	QString rawFileName = extractRawPath(sceneFile);
 	QString camFile = rawFileName + ".cam";
@@ -539,8 +588,41 @@ void MainWindow::openScene()
 	initTabWidget();
 	mCurrentTab = -1;
 
-	ui->openGLWidget2D->initializeRender(sceneFile.toStdString());
-	ui->openGLWidget3D->initializeRender(sceneFile.toStdString(), camFile.toStdString(), lightFile.toStdString());
+#ifdef LOADING_TIMES
+	std::ofstream measures;
+	measures.open(measureFileName, std::ios::app);
+	QStringList splitted = rawFileName.split("/");
+	measures << splitted[splitted.length() - 2].toStdString() << " & ";
+	measures.close();
+	timer.start();
+#endif
+#ifdef RESPONSE_TIMES
+	std::ofstream measures;
+	measures.open(measureFileName, std::ios::app);
+	QStringList splitted = rawFileName.split("/");
+	measures << splitted[splitted.length() - 2].toStdString() << " & ";
+	measures.close();
+#endif
+
+	Render *render = new Render(RenderType::Tree, sceneFile.toStdString());
+	ui->openGLWidget2D->initializeRender(render);
+	ui->openGLWidget3D->initializeRender(render, camFile.toStdString(), lightFile.toStdString());
+
+#ifdef LOADING_TIMES
+	qint64 elapsed = timer.elapsed();
+	measures.open(measureFileName, std::ios::app);
+	measures << elapsed << " \\\\" << endl;
+	measures.close();
+#endif
+#ifdef RESPONSE_TIMES
+	measures.open(measureFileName, std::ios::app);
+	measures << " \\\\" << endl;
+	measures.close();
+#endif
+
+	/*
+	progress.setValue(100);
+	*/
 }
 
 void MainWindow::addBVH()
@@ -554,7 +636,7 @@ void MainWindow::addBVH()
 	BVH *bvh = ui->openGLWidget2D->addBVH(sceneFile.toStdString());
 	if (bvh)
 	{
-		QString builderName = extractFileName(sceneFile);
+		QString builderName = QString::fromStdString(bvh->builderName);
 
 		ui->openGLWidget3D->addBVH(
 			bvh, 
@@ -617,6 +699,30 @@ void MainWindow::updateFarPlane(const double & f)
 	ui->openGLWidget3D->setFarPlane((float)f);
 }
 
+void MainWindow::topScreenshot()
+{
+	int idx = 0;
+	char name[100];
+	while (true)
+	{
+		sprintf(name, "screenshot/%d.png", idx);
+		idx++;
+		if (!fopen(name, "r"))
+			break;
+	}
+	tRender->screenshot(name);
+}
+
+void MainWindow::closeEvent(QCloseEvent * event)
+{
+#if defined(LOADING_TIMES) | defined(RESPONSE_TIMES)
+	std::ofstream measures;
+	measures.open(measureFileName, std::ios::app);
+	measures << "\\hline" << endl << "\\end{tabular}" << endl << "\\end{table}";
+	measures.close();
+#endif
+}
+
 void MainWindow::keyPressEvent(QKeyEvent * e)
 {
 	pressedKeys.insert(e->key());
@@ -633,7 +739,7 @@ void MainWindow::handleScalarButton(int index)
 		return;
 
 	this->mCurrentScalarSet = index;
-	this->tRender->drawers[mCurrentTab]->changeScalarSet(index);
+	this->tRender->drawers[mCurrentTab]->changeScalarSet(index, polynomDegree);
 
 	setSliders(100,
 		controlPanelTabs[mCurrentTab]->scalars->first,

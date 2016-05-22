@@ -7,12 +7,15 @@
 #include <QOpenGLBuffer>
 #include <QOpenGLVertexArrayObject>
 #include <QMatrix4x4>
+#include <QElapsedTimer>
 
 #include "BVHDrawer.h"
 #include "SceneDrawer.h"
 
 #include "structures.h"
 #include "SceneImporter.h"
+
+#include "../defines.h"
 
 using namespace std;
 
@@ -31,11 +34,13 @@ class Render
 {
 public:
     Render(RenderType::Type);
+	Render(RenderType::Type type, const Render &render),
     Render(RenderType::Type, const string &sceneName);
     ~Render();
 
 	virtual void draw() {}
 	virtual void moveView(const QVector3D &change) {}
+	virtual void screenshot(const string &outputFile) {}
 
 	//void loadScene(const string &sceneName);
 	void resetView();

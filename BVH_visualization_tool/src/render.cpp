@@ -11,6 +11,23 @@ Render::Render(RenderType::Type type)
 	//bvh = new BVH();
 }
 
+Render::Render(RenderType::Type type, const Render & render)
+{
+	renderType = type;
+	view = render.view;
+	model = render.model;
+	projection = render.projection;
+	scaleFactor = render.scaleFactor;
+	startingPosition = render.startingPosition;
+
+	sc = render.sc;
+	for (unsigned i = 0, s = render.bvhs.size(); i < s; i++)
+		bvhs.push_back(render.bvhs[0]);
+
+	currentBVHIndex = render.currentBVHIndex;
+	sceneImporter = render.sceneImporter;
+}
+
 #include <time.h>
 
 void Render::exportColors(const string &fileName)
@@ -51,18 +68,26 @@ Render::Render(RenderType::Type type, const string &sceneName)
 	bvhs.push_back(bvh);
 
 	currentBVHIndex = 0;
-
 	sceneImporter = new SceneImporter(bvh, sc);
+
+#ifdef LOADING_TIMES
+	QElapsedTimer timer;
+	timer.start();
+#endif
+	
 	sceneImporter->loadFromBinaryFile(sceneName);
+
+#ifdef LOADING_TIMES
+	qint64 elapsed = timer.elapsed();
+	std::ofstream measures;
+	measures.open(measureFileName, std::ios::app);
+	measures << elapsed << " & ";
+	measures.close();
+#endif
 }
 
 Render::~Render()
 {
-    delete sc;
-    sc = NULL;
-
-	delete sceneImporter;
-	sceneImporter = NULL;
 }
 /*
 void Render::moveView(const QVector3D &change)

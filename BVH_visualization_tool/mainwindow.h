@@ -12,10 +12,14 @@
 #include <QSignalMapper>
 #include <QComboBox>
 #include <QMenu>
+#include <QProgressDialog>
+#include <QElapsedTimer>
 #include <string>
 #include "src\TreeRender.h"
 #include "src\SceneRender.h"
 #include "src\ControlPanel.h"
+
+#include "defines.h"
 
 namespace Ui {
 	class MainWindow;
@@ -49,6 +53,7 @@ private slots:
 	void handleScalarButton(int index);
 	void handleDisplayMode(int index);
 	void setSliders(int stepNr, QSlider *a, QSlider *b, QLabel *aLabel, QLabel *bLabel, int scalarSetIndex);
+	void changePolynomDegree(double value);
 	void changeRange();
 	void changeTab(int current);
 	void changeTreeDepth(int newDepth);
@@ -62,6 +67,8 @@ private slots:
 	void resetControlPanel();
 	void updateNearPlane(const double &n);
 	void updateFarPlane(const double &f);
+	void topScreenshot();
+	void closeEvent(QCloseEvent *event);
 
 private:
 	QString cameraDialog();
@@ -91,6 +98,10 @@ private:
 	float mScalarMax;
 	float mSliderStepAdd;
 	float mSliderStepMult;
+	float polynomDegree;
+
+	// measuring
+	QElapsedTimer timer;
 };
 
 #endif // MAINWINDOW_H

@@ -23,6 +23,7 @@ public:
 
 	QVector3D trackBallMapping(const QPoint &p);
 	void initializeRender(const string &sceneName, const string &camFile, const string &lightsFile);
+	void initializeRender(Render *render, const string &camFile, const string &lightsFile);
 	void setFarPlane(const float &f);
 	void setNearPlane(const float &n);
 	float getFarPlane() const;

@@ -2,6 +2,10 @@
 #include <cmath>
 #include <assert.h>
 
+#ifdef RESPONSE_TIMES
+#include <time.h>
+#endif
+
 OpenGlWidget2D::OpenGlWidget2D(QWidget *parent) : QOpenGLWidget(parent)
 {
 	QOpenGLContext *ctx = QOpenGLContext::currentContext();
@@ -37,6 +41,23 @@ void OpenGlWidget2D::initializeRender(const string &sceneName)
 	resizeGL(width(), height());
 }
 
+void OpenGlWidget2D::initializeRender(Render *render)
+{
+	this->makeCurrent();
+	delete this->render;
+	this->render = new TreeRender(render);
+	this->render->hPixel = QVector2D(1.f / width(), 1.f / height());
+	if (!render)
+		throw "No render set";
+
+	GLint fb;
+	glGetIntegerv(GL_FRAMEBUFFER_BINDING, &fb);
+	this->render->setDefaultFrameBuffer(fb);
+
+	mw->AddRender(this->render);
+	resizeGL(width(), height());
+}
+
 void OpenGlWidget2D::initializeGL()
 {
 	this->makeCurrent();
@@ -58,6 +79,7 @@ void OpenGlWidget2D::paintGL()
 		render->draw();
 		resizeGL(width(), height());
 	}
+	this->update();
 }
 
 void OpenGlWidget2D::resizeGL(int w, int h)
@@ -95,11 +117,9 @@ void OpenGlWidget2D::wheelEvent(QWheelEvent *event)
 	int numSteps = numDegrees / 15;
 
 	if (event->orientation() == Qt::Horizontal) {
-		qDebug() << "horizontal, numSteps " << numSteps;
 		//scrollHorizontally(numSteps);
 	}
 	else {
-		qDebug() << "vertical, numSteps " << numSteps;
 		scaleModel(numSteps);
 	}
 	event->accept();
@@ -132,20 +152,49 @@ void OpenGlWidget2D::mousePressEvent(QMouseEvent *event)
 
 	switch (event->button()) {
 	case Qt::LeftButton: {
+		QPoint p = event->pos();
+
+#ifdef RESPONSE_TIMES
+		srand(time(NULL));
+		QElapsedTimer t;
+		qint64 totalTime = 0;
+		int nrOfIterations = 50;
+		int i = 0;
+
+		while (i < nrOfIterations)
+		{
+			p.setX(rand() % winWidth);
+			p.setY(rand() % winHeight);
+			t.start();
+#endif
 		// picking
 		QVector2D dnc; // device normalized coordinates
-		dnc[0] = event->pos().x() * 2 / float(winWidth) - 1;
-		dnc[1] = 1 - event->pos().y() * 2 / float(winHeight);
+		dnc[0] = p.x() * 2 / float(winWidth) - 1;
+		dnc[1] = 1 - p.y() * 2 / float(winHeight);
 
 		QVector4D transformedPos = render->model.inverted() * QVector4D(dnc.x(), dnc.y(), 0.0, 1.0);
 		int pickedNode = render->pick(QVector2D(transformedPos.x(), transformedPos.y()));
 		mw->PrintNodeInfo(pickedNode);
+
+#ifdef RESPONSE_TIMES
+		if (pickedNode == -1)
+			continue;
+
+		qint64 elapsed = t.elapsed();
+		totalTime += elapsed;
+		i++;
+		}
+
+		std::ofstream measures;
+		measures.open(measureFileName, std::ios::app);
+		measures << totalTime / nrOfIterations << " \\\\ " << endl;
+		measures.close();
+#endif
 		break;
 	}
 	case Qt::RightButton: {
 		// start moving
 		leftMousePressed = true;
-		qDebug() << "drag and drop, start: " << dragStartPositionWorld;
 
 		dragStartPositionWorld = getWorldCoordinates(event->pos());
 
@@ -163,7 +212,6 @@ void OpenGlWidget2D::mouseMoveEvent(QMouseEvent *event)
 		return;
 
 	QVector3D eventWorld = getWorldCoordinates(event->pos());
-	qDebug() << "moving.. " << dragStartPositionWorld - eventWorld;
 	QVector3D change = eventWorld - dragStartPositionWorld;
 	render->moveView(change);
 	dragStartPositionWorld = eventWorld;

@@ -18,6 +18,7 @@ class OpenGlWidget2D : public QOpenGLWidget, protected QOpenGLFunctions_4_3_Core
 public:
     OpenGlWidget2D(QWidget *parent = NULL);
 	void initializeRender(const string &sceneName);
+	void initializeRender(Render *render);
 	BVH * addBVH(const string &fileName);
 
     virtual void initializeGL();

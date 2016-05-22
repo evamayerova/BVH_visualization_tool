@@ -62,7 +62,7 @@ TreeRender::TreeRender() : Render(RenderType::Tree)
 
 }
 
-TreeRender::TreeRender(const string &sceneName) : Render(RenderType::Tree, sceneName)
+TreeRender::TreeRender(Render *render) : Render(RenderType::Tree, *render)
 {
 	cam.pos = QVector3D(0, 0, 1);
 	cam.dir = QVector3D(0, 0, -1);
@@ -73,6 +73,9 @@ TreeRender::TreeRender(const string &sceneName) : Render(RenderType::Tree, scene
 	model.setToIdentity();
 	view.lookAt(cam.pos, cam.pos + cam.dir, cam.upVector);
 	projection.setToIdentity();
+
+	if (!initShaders(&transferBarShader, "src/shaders/colorbar.vert", "src/shaders/colorbar.frag", "src/shaders/colorbar.geom"))
+		throw "shader creation failed";
 
 	if (!initShaders(&solidBoxShader, "src/shaders/conservative.vert", "src/shaders/conservative.frag", "src/shaders/conservative_triangles.geom"))
 		throw "shader creation failed";
@@ -94,7 +97,7 @@ TreeRender::TreeRender(const string &sceneName) : Render(RenderType::Tree, scene
 
 	currentShader = &solidBoxShader;
 
-	BVHDrawer *drawer = new BVHDrawer(bvhs[currentBVHIndex], currentShader, &textureRenderValuesShader, &textureRenderValuesShader);
+	BVHDrawer *drawer = new BVHDrawer(bvhs[currentBVHIndex], currentShader, &textureRenderValuesShader, &textureRenderValuesShader, &transferBarShader);
 	drawer->setBlendMode(0);
 
 #ifdef EXPORT
@@ -103,10 +106,85 @@ TreeRender::TreeRender(const string &sceneName) : Render(RenderType::Tree, scene
 	removeScalarSets();
 	sceneImporter->loadScalars("default.scal");
 #else
+
+	QElapsedTimer timer;
+	timer.start();
 	bvhs[currentBVHIndex]->setDefaultScalars();
+	qint64 elapsed = timer.elapsed();
+
+#ifdef LOADING_TIMES
+	std::ofstream measures;
+	measures.open(measureFileName, std::ios::app);
+	measures << elapsed << " & ";
+	measures.close();
+#endif
+
 #endif // EXPORT
 
-	drawer->changeScalarSet(0);
+	drawer->changeScalarSet(0, 1.f);
+	drawers.push_back(drawer);
+}
+
+TreeRender::TreeRender(const string &sceneName) : Render(RenderType::Tree, sceneName)
+{
+	cam.pos = QVector3D(0, 0, 1);
+	cam.dir = QVector3D(0, 0, -1);
+	cam.upVector = QVector3D(0, 1, 0);
+
+	drawMode = 0;
+	size = new QSize();
+	model.setToIdentity();
+	view.lookAt(cam.pos, cam.pos + cam.dir, cam.upVector);
+	projection.setToIdentity();
+
+	if (!initShaders(&transferBarShader, "src/shaders/colorbar.vert", "src/shaders/colorbar.frag", "src/shaders/colorbar.geom"))
+		throw "shader creation failed";
+
+	if (!initShaders(&solidBoxShader, "src/shaders/conservative.vert", "src/shaders/conservative.frag", "src/shaders/conservative_triangles.geom"))
+		throw "shader creation failed";
+
+	if (!initShaders(&lineBoxShader, "src/shaders/conservative.vert", "src/shaders/conservative.frag", "src/shaders/conservative_lines.geom"))
+		throw "shader creation failed";
+
+	if (!initShaders(&textureRenderCountsShader, "src/shaders/conservative.vert", "src/shaders/render_counts.frag", "src/shaders/conservative_triangles.geom"))
+		throw "shader creation failed";
+
+	if (!initShaders(&textureRenderValuesShader, "src/shaders/conservative.vert", "src/shaders/render_scalars.frag", "src/shaders/conservative_triangles.geom"))
+		throw "shader creation failed";
+
+	if (!initShaders(&solidRingShader, "src/shaders/conservative.vert", "src/shaders/conservative.frag", "src/shaders/conservative_ellipse_filled.geom"))
+		throw "shader creation failed";
+
+	if (!initShaders(&lineRingShader, "src/shaders/conservative.vert", "src/shaders/conservative.frag", "src/shaders/conservative_ellipse.geom"))
+		throw "shader creation failed";
+
+	currentShader = &solidBoxShader;
+
+	BVHDrawer *drawer = new BVHDrawer(bvhs[currentBVHIndex], currentShader, &textureRenderValuesShader, &textureRenderValuesShader, &transferBarShader);
+	drawer->setBlendMode(0);
+
+#ifdef EXPORT
+	bvhs[currentBVHIndex]->setDefaultScalars();
+	exportColors("default.scal");
+	removeScalarSets();
+	sceneImporter->loadScalars("default.scal");
+#else
+
+	QElapsedTimer timer;
+	timer.start();
+	bvhs[currentBVHIndex]->setDefaultScalars();
+	qint64 elapsed = timer.elapsed();
+
+#ifdef LOADING_TIMES
+	std::ofstream measures;
+	measures.open(measureFileName, std::ios::app);
+	measures << elapsed << " & ";
+	measures.close();
+#endif
+
+#endif // EXPORT
+
+	drawer->changeScalarSet(0, 1.f);
 	drawers.push_back(drawer);
 }
 
@@ -115,7 +193,7 @@ void TreeRender::loadScene(const string & sceneName)
 	sc = new Scene();
 	sceneImporter = new SceneImporter(bvhs[currentBVHIndex], sc);
 	sceneImporter->loadFromBinaryFile(sceneName);
-	BVHDrawer *drawer = new BVHDrawer(bvhs[currentBVHIndex], currentShader, &textureRenderValuesShader, &textureRenderCountsShader);
+	BVHDrawer *drawer = new BVHDrawer(bvhs[currentBVHIndex], currentShader, &textureRenderValuesShader, &textureRenderCountsShader, &transferBarShader);
 	drawer->setBlendMode(0);
 
 #ifdef EXPORT
@@ -126,7 +204,7 @@ void TreeRender::loadScene(const string & sceneName)
 
 	sceneImporter->loadScalars("data/scalars_bin");
 	bvhs[currentBVHIndex]->normalizeScalarSets();
-	drawer->changeScalarSet(0);
+	drawer->changeScalarSet(0, 1.f);
 	drawers.push_back(drawer);
 }
 
@@ -140,14 +218,15 @@ bool TreeRender::addBVH(const string & fileName)
 		BVHDrawer *drawer = new BVHDrawer(
 			bvh, currentShader, 
 			&textureRenderValuesShader, 
-			&textureRenderCountsShader);
+			&textureRenderCountsShader,
+			&transferBarShader);
 
 		drawers.push_back(drawer);
 
 		bvh->setDefaultScalars();
 		bvh->normalizeScalarSets();
 		drawer->setBlendMode(0);
-		drawer->changeScalarSet(0);
+		drawer->changeScalarSet(0, 1.f);
 		bvhs.push_back(bvh);
 		return true;
 	}
@@ -169,13 +248,14 @@ void TreeRender::changeTreeDepth(int newDepth, int scalarSet)
 		bvhs[currentBVHIndex], 
 		currentShader, 
 		&textureRenderValuesShader, 
-		&textureRenderCountsShader, 
+		&textureRenderCountsShader,
+		&transferBarShader,
 		newDepth);
 	bvhs[currentBVHIndex]->setDefaultScalars();
 	bvhs[currentBVHIndex]->normalizeScalarSets();
 
 	drawers[currentBVHIndex]->setBlendMode(0);
-	drawers[currentBVHIndex]->changeScalarSet(scalarSet);
+	drawers[currentBVHIndex]->changeScalarSet(scalarSet, polynomDegree);
 }
 
 TreeRender::~TreeRender()
@@ -186,7 +266,7 @@ TreeRender::~TreeRender()
 		*it = NULL;
 	}
 	drawers.clear();
-
+	
 	for (vector<BVH*>::iterator it = bvhs.begin(); it != bvhs.end(); it++)
 	{
 		if (*it != NULL)
@@ -194,6 +274,7 @@ TreeRender::~TreeRender()
 		*it = NULL;
 	}
 	bvhs.clear();
+	
 	currentShader = NULL;
 	delete size;
 	size = NULL;
@@ -245,7 +326,7 @@ int TreeRender::pick(const QVector2D &point)
 
 void TreeRender::displayPath(const std::vector<unsigned>& indices)
 {
-	drawers[currentBVHIndex]->clearPath();
+	drawers[currentBVHIndex]->clearPath(polynomDegree);
 	drawers[currentBVHIndex]->highlightNodes(indices);
 }
 
@@ -293,4 +374,9 @@ void TreeRender::setWiewportSize(const QSize &s)
 void TreeRender::setDefaultFrameBuffer(GLint fb)
 {
 	defaultFrameBuffer = fb;
+}
+
+void TreeRender::screenshot(const char *outputFile)
+{
+	drawers[currentBVHIndex]->drawToFile(outputFile);
 }

@@ -9,6 +9,13 @@ ScalarValuesGUI::ScalarValuesGUI(QWidget *parent)
 	localMax = new QLabel(container);
 	first = new QSlider(Qt::Horizontal, container);
 	second = new QSlider(Qt::Horizontal, container);
+	polynomDegreeLabel = new QLabel();
+	polynomDegreeLabel->setText("Polynom degree");
+	polynomDegree = new QDoubleSpinBox(container);
+	polynomDegree->setValue(1.0);
+	polynomDegree->setMinimum(0.0);
+	polynomDegree->setMaximum(19.0);
+	polynomDegree->setSingleStep(0.5);
 
 	QWidget *slidersHolder = new QWidget(container);
 
@@ -28,6 +35,13 @@ ScalarValuesGUI::ScalarValuesGUI(QWidget *parent)
 	layout = new QVBoxLayout(container);
 	layout->addWidget(scalars);
 	layout->addWidget(slidersHolder);
+
+	QWidget *polydegreeholder = new QWidget(container);
+	QHBoxLayout *polynomdegreewithlabel = new QHBoxLayout(polydegreeholder);
+	polynomdegreewithlabel->addWidget(polynomDegreeLabel);
+	polynomdegreewithlabel->addWidget(polynomDegree);
+
+	layout->addWidget(polydegreeholder);
 	layout->addWidget(addScalarsButton);
 
 	container->setLayout(layout);
@@ -41,8 +55,10 @@ ControlPanel::ControlPanel()
 	currNodeStats = new CurrentNodeStats(container);
 	scalars = new ScalarValuesGUI(container);
 	treeDepth = new TreeDepth(container);
+	treeDepth->container->hide();
 	blendingType = new BlendingType(container);
 	displayMode = new DisplayMode(container);
+	screenShots = new ScreenShots(container);
 	
 	QVBoxLayout *l = new QVBoxLayout();
 	l->addWidget(currNodeStats->container);
@@ -53,11 +69,23 @@ ControlPanel::ControlPanel()
 	l->addWidget(displayMode->container);
 
 	l->addSpacerItem(new QSpacerItem(10, 10, QSizePolicy::Minimum, QSizePolicy::Expanding));
+	l->addWidget(screenShots->container);
+	
 	container->setLayout(l);
 
 	currNodeStats->container->hide();
-
+	screenShots->container->hide();
 	scrollArea->setFrameShape(QFrame::NoFrame);
 	scrollArea->setWidget(container);
 	scrollArea->setWidgetResizable(true);
+}
+
+ScreenShots::ScreenShots(QWidget *parent)
+{
+	container = new QWidget(parent);
+	QVBoxLayout *l = new QVBoxLayout(container);
+	topScreen = new QPushButton("Make top screenshot", container);
+	bottomScreen = new QPushButton("Make bottom screenshot", container);
+	l->addWidget(topScreen);
+	l->addWidget(bottomScreen);
 }

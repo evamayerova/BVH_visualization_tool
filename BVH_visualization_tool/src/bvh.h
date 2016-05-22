@@ -48,6 +48,7 @@ public:
 	float *mMeshCenterCoordinates; // array of computed coordinates of node centers in mesh
 
     int depth, arity, mMeshCenterCoordinatesNr;
+	string builderName;
 
 private:
     //void generateMeshes();

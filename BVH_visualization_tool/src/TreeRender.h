@@ -1,12 +1,16 @@
 #pragma once
 #include "render.h"
+#include "../defines.h"
 #include <QOpenGLFramebufferObject>
+
+#include <QElapsedTimer>
 
 class TreeRender : 
 	public Render
 {
 public:
 	TreeRender();
+	TreeRender(Render *render);
 	TreeRender(const string &sceneName);
 	~TreeRender();
 
@@ -24,12 +28,15 @@ public:
 	void changeBlendMode(int mode);
 	void setWiewportSize(const QSize &s);
 	void setDefaultFrameBuffer(GLint fb);
+	void screenshot(const char *outputFile);
 
 	QOpenGLShaderProgram solidBoxShader, lineBoxShader, solidRingShader, lineRingShader;
 	QOpenGLShaderProgram textureRenderCountsShader, textureRenderValuesShader;
+	QOpenGLShaderProgram transferBarShader;
 	QOpenGLShaderProgram *currentShader;
 	vector<BVHDrawer*> drawers;
 	Camera cam;
+	float polynomDegree;
 
 private:
 	GLint defaultFrameBuffer;

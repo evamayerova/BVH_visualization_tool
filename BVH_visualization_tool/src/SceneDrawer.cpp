@@ -40,7 +40,7 @@ void SceneDrawer::setSceneBuffers()
 
 	std::vector<QVector3D> normals;
 	normals.reserve(scene->mTriangles.size() * 3);
-	
+
 	sceneColors.reserve(scene->mTriangles.size() * 3);
 
 	for (unsigned i = 0, s = scene->mTriangles.size(); i < s; i++) {
@@ -71,7 +71,6 @@ void SceneDrawer::setSceneBuffers()
 		sceneColors.push_back(scene->mTriangles[i].color);
 		sceneColors.push_back(scene->mTriangles[i].color);
 	}
-	qDebug() << mmin << mmax;
 	sceneMesh->indicesNr = scene->mTriangles.size();
 
 	glGenVertexArrays(1, &sceneMesh->vao);
@@ -80,19 +79,19 @@ void SceneDrawer::setSceneBuffers()
 	glGenBuffers(1, &sceneMesh->vbo);
 	glBindBuffer(GL_ARRAY_BUFFER, sceneMesh->vbo);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * rawTriangles.size(), rawTriangles.data(), GL_STATIC_DRAW);
-	
+
 	int vertexLoc = sceneShader->attributeLocation("position");
 	sceneShader->enableAttributeArray(vertexLoc);
 	glVertexAttribPointer(vertexLoc, 3, GL_FLOAT, GL_FALSE, 0, (void *)(0));
-	 
+
 	glGenBuffers(1, &sceneMesh->vboC);
 	glBindBuffer(GL_ARRAY_BUFFER, sceneMesh->vboC);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(Color) * sceneColors.size(), sceneColors.data(), GL_STATIC_DRAW);
-	
+
 	int colorLoc = sceneShader->attributeLocation("color_in");
 	sceneShader->enableAttributeArray(colorLoc);
 	glVertexAttribPointer(colorLoc, 4, GL_UNSIGNED_BYTE, GL_TRUE, 0, (void *)(0));//(void *)(3 * sizeof(Triangle)));//(void *)(3 * sizeof(QVector3D)));
-	
+
 	glGenBuffers(1, &sceneMesh->vboN);
 	glBindBuffer(GL_ARRAY_BUFFER, sceneMesh->vboN);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(QVector3D) * normals.size(), normals.data(), GL_STATIC_DRAW);
@@ -111,8 +110,8 @@ void SceneDrawer::setSceneBuffers()
 
 void SceneDrawer::setBBoxBuffers()
 {
-	GLfloat vertices[] = {	
-		
+	GLfloat vertices[] = {
+
 		-0.5, -0.5, +0.5,
 		+0.5, -0.5, +0.5,
 		+0.5, +0.5, +0.5,
@@ -199,9 +198,9 @@ void SceneDrawer::setBBoxVertices(BVH *bvh, BVHNode *node)
 	glBindBuffer(GL_ARRAY_BUFFER, bboxMesh->vbo);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, 8 * 3 * sizeof(GLfloat), vertices);
 
-	
+
 	std::vector<unsigned> triangles = getPrimitiveIndices(bvh, node);
-	
+
 	Color c;
 	c.color[0] = (char)0;
 	c.color[1] = (char)255;
@@ -209,13 +208,9 @@ void SceneDrawer::setBBoxVertices(BVH *bvh, BVHNode *node)
 	c.color[3] = (char)0;
 
 	std::vector<Color> localColors;
-	qDebug() << sizeof(localColors);
 	localColors.push_back(c);
 	localColors.push_back(c);
 	localColors.push_back(c);
-
-	qDebug() << sizeof(localColors.data());
-	qDebug() << sizeof(Color);
 
 	glBindVertexArray(sceneMesh->vao);
 	glBindBuffer(GL_ARRAY_BUFFER, sceneMesh->vboC);
@@ -223,7 +218,7 @@ void SceneDrawer::setBBoxVertices(BVH *bvh, BVHNode *node)
 	{
 		glBufferSubData(GL_ARRAY_BUFFER, scene->mTriangleIdx[currentBVHIndex][*it] * 3 * 4, sizeof(Color) * 3, localColors.data());
 	}
-	
+
 }
 
 void SceneDrawer::unsetBBoxMesh()
@@ -248,12 +243,11 @@ std::vector<unsigned> SceneDrawer::getPrimitiveIndices(BVH *bvh, BVHNode *n) con
 		std::vector<unsigned> leftTriangles = getPrimitiveIndices(bvh, &bvh->mNodes[n->child]);
 		std::vector<unsigned> rightTriangles = getPrimitiveIndices(bvh, &bvh->mNodes[n->child + 1]);
 
-		result.insert(result.end(),  leftTriangles.begin(), leftTriangles.end());
+		result.insert(result.end(), leftTriangles.begin(), leftTriangles.end());
 		result.insert(result.end(), rightTriangles.begin(), rightTriangles.end());
 	}
 	return result;
 }
-
 
 void SceneDrawer::draw(QMatrix4x4 *projection, QMatrix4x4 *view, QMatrix4x4 *model, PointLight *light)
 {
@@ -275,7 +269,7 @@ void SceneDrawer::draw(QMatrix4x4 *projection, QMatrix4x4 *view, QMatrix4x4 *mod
 	assert(glGetError() == GL_NO_ERROR);
 	sceneMesh->drawArrays();
 
-	if (showBBox) 
+	if (showBBox)
 	{
 		glDisable(GL_CULL_FACE);
 		bboxShader->bind();
@@ -284,4 +278,9 @@ void SceneDrawer::draw(QMatrix4x4 *projection, QMatrix4x4 *view, QMatrix4x4 *mod
 		assert(glGetError() == GL_NO_ERROR);
 		bboxMesh->drawElements();
 	}
+}
+
+void SceneDrawer::drawToFile(const string & outputFile)
+{
+
 }
