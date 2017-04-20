@@ -93,7 +93,7 @@ struct BlendingType {
 		maxVal = new QRadioButton("M&aximum value");
 		minVal = new QRadioButton("M&inimum value");
 		aveVal = new QRadioButton("A&verage value");
-		topVal = new QRadioButton("T&op value");
+		//topVal = new QRadioButton("T&op value");
 
 		maxVal->setChecked(true);
 
@@ -101,7 +101,7 @@ struct BlendingType {
 		l->addWidget(maxVal);
 		l->addWidget(minVal);
 		l->addWidget(aveVal);
-		l->addWidget(topVal);
+		//l->addWidget(topVal);
 
 		groupBox->setLayout(l);
 	}

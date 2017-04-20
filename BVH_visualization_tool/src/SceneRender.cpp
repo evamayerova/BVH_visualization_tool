@@ -46,6 +46,9 @@ SceneRender::SceneRender(Render * r, const string & camFile, const string & ligh
 		throw "shader creation failed";
 
 	drawer = new SceneDrawer(sc, &shader, &bboxShader);
+
+	ctr = 0;
+	cumTime = 0;
 }
 
 void SceneRender::switchCamera(int camIndex)
@@ -159,10 +162,25 @@ SceneRender::~SceneRender()
 
 void SceneRender::draw()
 {
+#ifdef RENDERING_TIMES
+	QElapsedTimer t;
+	t.start();
+#endif
+
 	if (drawer)
 	{
 		drawer->draw(&projection, &view, &model, &light);
 	}
+
+#ifdef RENDERING_TIMES
+	ctr++;
+	if (ctr == 100)
+	{
+		qDebug() << "3D " << cumTime / ctr << " & ";
+		ctr++;
+	}
+	cumTime += t.elapsed();
+#endif
 }
 
 bool SceneRender::pick(ray &r)

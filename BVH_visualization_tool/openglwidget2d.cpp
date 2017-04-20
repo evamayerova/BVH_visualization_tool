@@ -8,19 +8,23 @@
 
 OpenGlWidget2D::OpenGlWidget2D(QWidget *parent) : QOpenGLWidget(parent)
 {
+	/*
 	QOpenGLContext *ctx = QOpenGLContext::currentContext();
 	ctx = new QOpenGLContext();
 	QOpenGLDebugLogger *logger = new QOpenGLDebugLogger(this);
+	*/
 }
 
 BVH * OpenGlWidget2D::addBVH(const string &fileName)
 {
 	this->makeCurrent();
+	assert(glGetError() == GL_NO_ERROR);
 	if (render->addBVH(fileName))
 		return render->bvhs[render->bvhs.size() - 1];
 
-	QOpenGLContext *context = QOpenGLContext::currentContext();
+	//QOpenGLContext *context = QOpenGLContext::currentContext();
 	resizeGL(width(), height());
+	assert(glGetError() == GL_NO_ERROR);
 	return NULL;
 }
 
@@ -45,7 +49,7 @@ void OpenGlWidget2D::initializeRender(Render *render)
 {
 	this->makeCurrent();
 	delete this->render;
-	this->render = new TreeRender(render);
+	this->render = new TreeRender(render, QSize(winWidth, winHeight));
 	this->render->hPixel = QVector2D(1.f / width(), 1.f / height());
 	if (!render)
 		throw "No render set";
@@ -64,20 +68,22 @@ void OpenGlWidget2D::initializeGL()
 	initializeOpenGLFunctions();
 	render = NULL;
 	blendType = maxVal;
-	glClearColor(0.2, 0.2, 0.2, 1);
+	glClearColor(0.2f, 0.2f, 0.2f, 1.f);
 	glEnable(GL_TEXTURE_2D);
-	//glEnable(GL_BLEND);
 	timer.start(12, this);
+	resizeGL(width(), height());
 }
 
 void OpenGlWidget2D::paintGL()
 {
 	this->makeCurrent();
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	assert(glGetError() == GL_NO_ERROR);
 	if (render)
 	{
 		render->draw();
-		resizeGL(width(), height());
+		resizeGL(winWidth, winHeight);
+		assert(glGetError() == GL_NO_ERROR);
 	}
 	this->update();
 }
@@ -217,7 +223,7 @@ void OpenGlWidget2D::mouseMoveEvent(QMouseEvent *event)
 	dragStartPositionWorld = eventWorld;
 }
 
-void OpenGlWidget2D::mouseReleaseEvent(QMouseEvent *e)
+void OpenGlWidget2D::mouseReleaseEvent(QMouseEvent *)
 {
 	if (!render)
 		return;

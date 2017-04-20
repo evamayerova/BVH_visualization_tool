@@ -9,8 +9,8 @@ MainWindow::MainWindow(QWidget *parent) :
 {
 	ui->setupUi(this);
 	QList<int> sizes = ui->MenuSplitter->sizes();
-	sizes.replace(0, this->height() / 0.2);
-	sizes.replace(1, this->height() / 0.8);
+	sizes.replace(0, this->height() / 0.25);
+	sizes.replace(1, this->height() / 0.75);
 	ui->MenuSplitter->setSizes(sizes);
 
 	ui->openGLWidget2D->mw = this;
@@ -88,6 +88,15 @@ MainWindow::MainWindow(QWidget *parent) :
 	measures << "\\hline" << endl << "scene name & pick triangle & pick node \\\\" << endl << "\\hline" << endl;
 	measures.close();
 #endif
+#ifdef RENDERING_TIMES
+	std::ofstream measures;
+	measures.open(measureFileName, std::ios::app);
+	measures << endl << "\\begin{table}\\centering" << endl;
+	measures << "\\caption{Rendering times times (ms)}" << endl;
+	measures << "\\begin{tabular}{|c||c|c|}" << endl;
+	measures << "\\hline" << endl << "scene name & tree view & scene view \\\\" << endl << "\\hline" << endl;
+	measures.close();
+#endif
 }
 
 MainWindow::~MainWindow()
@@ -107,6 +116,7 @@ void MainWindow::AddRender(SceneRender *r)
 void MainWindow::AddRender(TreeRender *r)
 {
 	this->tRender = r;
+	this->tRender->polynomDegree = polynomDegree;
 	if (this->sRender)
 		showControlPanel(QString::fromStdString(r->bvhs[r->currentBVHIndex]->builderName));
 }
@@ -146,6 +156,7 @@ void MainWindow::createActions()
 	openBVHAct = new QAction(tr("&Add BVH"), this);
 	openBVHAct->setStatusTip(tr("Add another BVH to actual scene"));
 	connect(openBVHAct, &QAction::triggered, this, &MainWindow::addBVH);
+	openBVHAct->setEnabled(false);
 }
 
 void MainWindow::handleDisplayMode(int index)
@@ -155,11 +166,11 @@ void MainWindow::handleDisplayMode(int index)
 
 void MainWindow::setSliders(int stepsNr, QSlider *a, QSlider *b, QLabel *aLabel, QLabel *bLabel, int scalarSetIndex)
 {
-	float scMin = tRender->bvhs[mCurrentTab]->mScalarSets[mCurrentScalarSet]->localMin;
-	float scMax = tRender->bvhs[mCurrentTab]->mScalarSets[mCurrentScalarSet]->localMax;
+	float scMin = tRender->bvhs[mCurrentTab]->mScalarSets[scalarSetIndex]->localMin;
+	float scMax = tRender->bvhs[mCurrentTab]->mScalarSets[scalarSetIndex]->localMax;
 
-	mSliderStepAdd = scMin;
-	mSliderStepMult = (scMax - scMin) / stepsNr;
+	mSliderStepAdd[mCurrentTab] = scMin;
+	mSliderStepMult[mCurrentTab] = (scMax - scMin) / stepsNr;
 	//scalarMax = pow(1.05, stepsNr);
 
 	aLabel->setText(QString::number(scMin, 'f', 2));
@@ -176,15 +187,16 @@ void MainWindow::changePolynomDegree(double value)
 	polynomDegree = value;
 	tRender->polynomDegree = value;
 
-	tRender->drawers[mCurrentTab]->changeScalarSet(mCurrentScalarSet, polynomDegree);
-	tRender->drawers[mCurrentTab]->showDisplayedNodes();
+	changeRange();
 }
 
-void MainWindow::setScalars(QWidget *parent)
+void MainWindow::setScalars()
 {
 	if (mCurrentScalarSet == -1)
 		return;
 
+	mSliderStepAdd.push_back(0);
+	mSliderStepMult.push_back(0);
 
 	//scalarsGUI.container->setParent(parent); 
 	//scalarsGUI.container->setStyleSheet("margin:5px; border:1px solid rgb(255, 255, 255); ");//");// #58ACFA");
@@ -219,7 +231,7 @@ void MainWindow::setScalars(QWidget *parent)
 		SLOT(handleScalarButton(int)));
 }
 
-void MainWindow::setTreeDepthRange(QWidget *parent)
+void MainWindow::setTreeDepthRange()
 {
 	controlPanelTabs[mCurrentTab]->treeDepth->depthHolder->setRange(
 		1, tRender->bvhs[mCurrentTab]->depth);
@@ -227,7 +239,7 @@ void MainWindow::setTreeDepthRange(QWidget *parent)
 		tRender->bvhs[mCurrentTab]->depth);
 }
 
-void MainWindow::setDisplayModes(QWidget * parent)
+void MainWindow::setDisplayModes()
 {
 	disconnect(controlPanelTabs[mCurrentTab]->displayMode->displayModes);
 	controlPanelTabs[mCurrentTab]->displayMode->displayModes->clear();
@@ -269,7 +281,7 @@ void MainWindow::setCurrNodeStats(QWidget *parent)
 
 void MainWindow::setSceneStats()
 {
-	unsigned triangleNr = sRender->sc->mTriangles.size();
+	size_t triangleNr = sRender->sc->mTriangles.size();
 	controlPanelTabs[mCurrentTab]->treeStats->triangleCountLabel->setText(
 		"Triangle count: " + QString::number(triangleNr));
 
@@ -310,16 +322,18 @@ void MainWindow::connectControlPanelSignals(int index)
 		SLOT(map())
 		);
 
+	/*
 	connect(controlPanelTabs[index]->blendingType->topVal,
 		SIGNAL(toggled(bool)),
 		signalMapper,
 		SLOT(map())
 		);
+		*/
 
 	signalMapper->setMapping(controlPanelTabs[index]->blendingType->maxVal, 0);
 	signalMapper->setMapping(controlPanelTabs[index]->blendingType->minVal, 1);
 	signalMapper->setMapping(controlPanelTabs[index]->blendingType->aveVal, 2);
-	signalMapper->setMapping(controlPanelTabs[index]->blendingType->topVal, 3);
+	//signalMapper->setMapping(controlPanelTabs[index]->blendingType->topVal, 3);
 
 	connect(signalMapper, SIGNAL(mapped(int)), this, SLOT(switchBlendType(int)));
 
@@ -338,10 +352,10 @@ void MainWindow::connectControlPanelSignals(int index)
 
 void MainWindow::showControlPanel(const QString &builderName)
 {
-	QVBoxLayout *controlPanel = ui->controlPanel;
+	//QVBoxLayout *controlPanel = ui->controlPanel;
 
 	ControlPanel *c = new ControlPanel();
-	mCurrentTab = controlPanelTabs.size();
+	mCurrentTab = (int)controlPanelTabs.size();
 	controlPanelTabs.push_back(c);
 
 	tabWidget->addTab(c->scrollArea, builderName);
@@ -357,10 +371,10 @@ void MainWindow::showControlPanel(const QString &builderName)
 	c->treeStats->trianglesPerLeaf->setText(QString("Triangles per leaf (average): ") +
 		QString::number(sRender->sc->mTriangles.size() / float(ceil(tRender->bvhs[mCurrentTab]->mMeshCenterCoordinatesNr / 2) + 1)));
 
-	setScalars(this);
-	setTreeDepthRange(this);
+	setScalars();
+	setTreeDepthRange();
 	setSceneStats();
-	setDisplayModes(this);
+	setDisplayModes();
 
 	resViewT->show();
 	widget3D->show();
@@ -370,6 +384,11 @@ void MainWindow::showControlPanel(const QString &builderName)
 		changeCam->hide();
 
 	connectControlPanelSignals(mCurrentTab);
+
+	if (controlPanelTabs.size() > 1)
+	{
+		controlPanelTabs[mCurrentTab]->displayMode->displayModes->setCurrentIndex(controlPanelTabs[mCurrentTab - 1]->displayMode->displayModes->currentIndex());
+	}
 }
 
 void MainWindow::unconsistentBVHDialog()
@@ -378,7 +397,7 @@ void MainWindow::unconsistentBVHDialog()
 	unconsistentBVHMessage->setText(
 		"This file does not match with the current scene. If you want to load another scene, please open a new one.");
 	unconsistentBVHMessage->setStandardButtons(QMessageBox::Cancel);
-	int ret = unconsistentBVHMessage->exec();
+	unconsistentBVHMessage->exec();
 }
 
 void MainWindow::PrintNodeInfo(int nodeIndex)
@@ -442,7 +461,7 @@ float MainWindow::recalculateValue(const float &val)
 {
 	float resizedVal = pow(val, polynomDegree) / pow(100, polynomDegree - 1);
 
-	return mSliderStepMult * resizedVal + mSliderStepAdd;
+	return mSliderStepMult[mCurrentTab] * resizedVal + mSliderStepAdd[mCurrentTab];
 }
 
 void MainWindow::changeRange()
@@ -472,6 +491,7 @@ void MainWindow::changeTab(int current)
 	if (current == -1)
 		return;
 
+	controlPanelTabs[current]->displayMode->displayModes->setCurrentIndex(controlPanelTabs[mCurrentTab]->displayMode->displayModes->currentIndex());
 	if (tRender && sRender)
 	{
 		tRender->changeCurrentBVH(current);// tRender->currentBVHIndex = current;
@@ -603,6 +623,13 @@ void MainWindow::openScene()
 	measures << splitted[splitted.length() - 2].toStdString() << " & ";
 	measures.close();
 #endif
+#ifdef RENDERING_TIMES
+	std::ofstream measures;
+	measures.open(measureFileName, std::ios::app);
+	QStringList splitted = rawFileName.split("/");
+	measures << splitted[splitted.length() - 2].toStdString() << " & ";
+	measures.close();
+#endif
 
 	Render *render = new Render(RenderType::Tree, sceneFile.toStdString());
 	ui->openGLWidget2D->initializeRender(render);
@@ -619,10 +646,16 @@ void MainWindow::openScene()
 	measures << " \\\\" << endl;
 	measures.close();
 #endif
+#ifdef RENDERING_TIMES
+	measures.open(measureFileName, std::ios::app);
+	measures << " \\\\" << endl;
+	measures.close();
+#endif
 
 	/*
 	progress.setValue(100);
 	*/
+	openBVHAct->setEnabled(true);
 }
 
 void MainWindow::addBVH()
@@ -660,7 +693,7 @@ void MainWindow::addScalars()
 		return;
 
 	tRender->sceneImporter->loadScalars(scalarFile.toStdString());
-	setScalars(this);
+	setScalars();
 }
 
 void clearWidget(QBoxLayout *w)
@@ -739,6 +772,7 @@ void MainWindow::handleScalarButton(int index)
 		return;
 
 	this->mCurrentScalarSet = index;
+	this->sRender->drawer->currentScalarSet = index;
 	this->tRender->drawers[mCurrentTab]->changeScalarSet(index, polynomDegree);
 
 	setSliders(100,

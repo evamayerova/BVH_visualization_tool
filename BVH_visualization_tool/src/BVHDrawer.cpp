@@ -39,6 +39,8 @@ BVHDrawer::BVHDrawer(
 	measures.open(measureFileName, std::ios::app);
 	measures << timer.elapsed() << " & ";
 #endif
+
+	glGetIntegerv(GL_FRAMEBUFFER_BINDING, &screenFrameBuffer);
 }
 
 BVHDrawer::~BVHDrawer()
@@ -70,51 +72,83 @@ BVHDrawer::~BVHDrawer()
 
 void BVHDrawer::draw()
 {
+#ifdef RENDERING_TIMES
+	glFinish();
+#endif
+	
 	glBindFramebuffer(GL_FRAMEBUFFER, screenFrameBuffer);
+ 	assert(glGetError() == GL_NO_ERROR);
 	shaderProgram->bind();
+	assert(glGetError() == GL_NO_ERROR);
 
 	for (int i = 0, s = meshes.size(); i < s; i++)
 	{
 		switch (blendMode) {
 		case maxVal:
 			textureRenderValuesShader->bind();
+			assert(glGetError() == GL_NO_ERROR);
 			textureRenderValuesShader->setUniformValue("scalar_min", bvh->mScalarSets[currentScalarSet]->selectedMin);
+			assert(glGetError() == GL_NO_ERROR);
 			textureRenderValuesShader->setUniformValue("scalar_max", bvh->mScalarSets[currentScalarSet]->selectedMax);
+			assert(glGetError() == GL_NO_ERROR);
 
 #ifndef DRAW_ONLY_TEXTURES
 			glBindFramebuffer(GL_FRAMEBUFFER, fboValues);
+			assert(glGetError() == GL_NO_ERROR);
 #endif
 			glClearColor(0.f, 0.f, 0.f, 1.f);
+			assert(glGetError() == GL_NO_ERROR);
 			glClear(GL_COLOR_BUFFER_BIT);
+			assert(glGetError() == GL_NO_ERROR);
 			glEnable(GL_BLEND);
+			assert(glGetError() == GL_NO_ERROR);
 			glBlendEquation(GL_MAX);
+			assert(glGetError() == GL_NO_ERROR);
 			meshes[i]->drawArraysPoints();
+			assert(glGetError() == GL_NO_ERROR);
 			glDisable(GL_BLEND);
+			assert(glGetError() == GL_NO_ERROR);
 
 			glBindFramebuffer(GL_FRAMEBUFFER, screenFrameBuffer);
+			assert(glGetError() == GL_NO_ERROR);
 			glActiveTexture(GL_TEXTURE0 + 1);
+			assert(glGetError() == GL_NO_ERROR);
 			glBindTexture(GL_TEXTURE_2D, textureValues);
+			assert(glGetError() == GL_NO_ERROR);
 			break;
 
 		case minVal:
 			textureRenderValuesShader->bind();
+			assert(glGetError() == GL_NO_ERROR);
 			textureRenderValuesShader->setUniformValue("scalar_min", bvh->mScalarSets[currentScalarSet]->selectedMin);
+			assert(glGetError() == GL_NO_ERROR);
 			textureRenderValuesShader->setUniformValue("scalar_max", bvh->mScalarSets[currentScalarSet]->selectedMax);
+			assert(glGetError() == GL_NO_ERROR);
 
 #ifndef DRAW_ONLY_TEXTURES
 			glBindFramebuffer(GL_FRAMEBUFFER, fboValues);
+			assert(glGetError() == GL_NO_ERROR);
 			//glBindTexture(GL_TEXTURE_2D, textureValues);
 #endif
 			glClearColor(1.f, 1.f, 1.f, 1.f);
+			assert(glGetError() == GL_NO_ERROR);
 			glClear(GL_COLOR_BUFFER_BIT);
+			assert(glGetError() == GL_NO_ERROR);
 			glEnable(GL_BLEND);
+			assert(glGetError() == GL_NO_ERROR);
 			glBlendEquation(GL_MIN);
+			assert(glGetError() == GL_NO_ERROR);
 			meshes[i]->drawArraysPoints();
+			assert(glGetError() == GL_NO_ERROR);
 			glDisable(GL_BLEND);
+			assert(glGetError() == GL_NO_ERROR);
 
 			glBindFramebuffer(GL_FRAMEBUFFER, screenFrameBuffer);
+			assert(glGetError() == GL_NO_ERROR);
 			glActiveTexture(GL_TEXTURE0 + 1);
+			assert(glGetError() == GL_NO_ERROR);
 			glBindTexture(GL_TEXTURE_2D, textureValues);
+			assert(glGetError() == GL_NO_ERROR);
 			break;
 
 		case aveVal:
@@ -122,21 +156,34 @@ void BVHDrawer::draw()
 
 #ifndef DRAW_ONLY_TEXTURES
 			glBindFramebuffer(GL_FRAMEBUFFER, fboValues);
+			assert(glGetError() == GL_NO_ERROR);
 #endif
 			textureRenderValuesShader->bind();
+			assert(glGetError() == GL_NO_ERROR);
 			textureRenderValuesShader->setUniformValue("scalar_min", bvh->mScalarSets[currentScalarSet]->selectedMin);
+			assert(glGetError() == GL_NO_ERROR);
 			textureRenderValuesShader->setUniformValue("scalar_max", bvh->mScalarSets[currentScalarSet]->selectedMax);
+			assert(glGetError() == GL_NO_ERROR);
 
 			glClearColor(0.f, 0.f, 0.f, 1.f);
+			assert(glGetError() == GL_NO_ERROR);
 			glClear(GL_COLOR_BUFFER_BIT);
+			assert(glGetError() == GL_NO_ERROR);
 			glEnable(GL_BLEND);
+			assert(glGetError() == GL_NO_ERROR);
 			glBlendEquation(GL_FUNC_ADD);
+			assert(glGetError() == GL_NO_ERROR);
 			meshes[i]->drawArraysPoints();
+			assert(glGetError() == GL_NO_ERROR);
 			glDisable(GL_BLEND);
+			assert(glGetError() == GL_NO_ERROR);
 
 			glBindFramebuffer(GL_FRAMEBUFFER, screenFrameBuffer);
+			assert(glGetError() == GL_NO_ERROR);
 			glActiveTexture(GL_TEXTURE0 + 1);
+			assert(glGetError() == GL_NO_ERROR);
 			glBindTexture(GL_TEXTURE_2D, textureValues);
+			assert(glGetError() == GL_NO_ERROR);
 
 			// second pass - render counts of pixel candidates
 			/*
@@ -160,44 +207,68 @@ void BVHDrawer::draw()
 
 		case topVal:
 			textureRenderValuesShader->bind();
+			assert(glGetError() == GL_NO_ERROR);
 			textureRenderValuesShader->setUniformValue("scalar_min", bvh->mScalarSets[currentScalarSet]->selectedMin);
+			assert(glGetError() == GL_NO_ERROR);
 			textureRenderValuesShader->setUniformValue("scalar_max", bvh->mScalarSets[currentScalarSet]->selectedMax);
+			assert(glGetError() == GL_NO_ERROR);
 
 #ifndef DRAW_ONLY_TEXTURES
 			glBindFramebuffer(GL_FRAMEBUFFER, fboValues);
+			assert(glGetError() == GL_NO_ERROR);
 			//glBindTexture(GL_TEXTURE_2D, textureValues);
 #endif
 			glClearColor(0.f, 0.f, 0.f, 1.f);
+			assert(glGetError() == GL_NO_ERROR);
 			meshes[i]->drawArraysPoints();
+			assert(glGetError() == GL_NO_ERROR);
 
 			glBindFramebuffer(GL_FRAMEBUFFER, screenFrameBuffer);
+			assert(glGetError() == GL_NO_ERROR);
 			glActiveTexture(GL_TEXTURE0 + 1);
+			assert(glGetError() == GL_NO_ERROR);
 			glBindTexture(GL_TEXTURE_2D, textureValues);
+			assert(glGetError() == GL_NO_ERROR);
 			break;
 
 		}
 
 #ifndef DRAW_ONLY_TEXTURES
 		glClearColor(0.2f, 0.2f, 0.2f, 1.f);
+		assert(glGetError() == GL_NO_ERROR);
 		glClear(GL_COLOR_BUFFER_BIT);
-		
+		assert(glGetError() == GL_NO_ERROR);
+
 		shaderProgram->bind();
+		assert(glGetError() == GL_NO_ERROR);
 		shaderProgram->setUniformValue("colorMapMin", 0.f);
+		assert(glGetError() == GL_NO_ERROR);
 		shaderProgram->setUniformValue("colorMapMax", 1.f);
+		assert(glGetError() == GL_NO_ERROR);
 		meshes[i]->drawArraysPoints();
-		
+		assert(glGetError() == GL_NO_ERROR);
+
 		transferBarShader->bind();
+		assert(glGetError() == GL_NO_ERROR);
 		transferBarShader->setUniformValue("colorMapMin", bvh->mScalarSets[currentScalarSet]->selectedMin);
+		assert(glGetError() == GL_NO_ERROR);
 		transferBarShader->setUniformValue("colorMapMax", bvh->mScalarSets[currentScalarSet]->selectedMax);
+		assert(glGetError() == GL_NO_ERROR);
 		transferBarMesh->drawArraysPoints();
+		assert(glGetError() == GL_NO_ERROR);
 		//glBindTexture(GL_TEXTURE_2D, 0);
 #endif
 	}
+
+#ifdef RENDERING_TIMES
+	glFinish();
+#endif
 }
 
 void BVHDrawer::drawToFile(const char *outputFile)
 {
 	glBindFramebuffer(GL_FRAMEBUFFER, fileFrameBuffer);
+	assert(glGetError() == GL_NO_ERROR);
 	shaderProgram->bind();
 
 	for (int i = 0, s = meshes.size(); i < s; i++)
@@ -392,9 +463,13 @@ void BVHDrawer::reshape(const QSize & s)
 	}
 
 	glGetIntegerv(GL_FRAMEBUFFER_BINDING, &screenFrameBuffer);
+	assert(glGetError() == GL_NO_ERROR);
 	reshapeScalarTexture(textureValues);
+	assert(glGetError() == GL_NO_ERROR);
 	reshapeScalarTexture(textureCounts);
+	assert(glGetError() == GL_NO_ERROR);
 	glBindFramebuffer(GL_FRAMEBUFFER, screenFrameBuffer);
+	assert(glGetError() == GL_NO_ERROR);
 
 	/*
 	glBindRenderbuffer(GL_RENDERBUFFER, textureCounts);
@@ -412,10 +487,15 @@ void BVHDrawer::reshape(const QSize & s)
 void BVHDrawer::initScalarTexture(int i, GLuint & fbo, GLuint & tex)
 {
 	glActiveTexture(GL_TEXTURE0 + i);
+	assert(glGetError() == GL_NO_ERROR);
 	glGenTextures(1, &tex);
+	assert(glGetError() == GL_NO_ERROR);
 	glBindTexture(GL_TEXTURE_2D, tex);
+	assert(glGetError() == GL_NO_ERROR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	assert(glGetError() == GL_NO_ERROR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	assert(glGetError() == GL_NO_ERROR);
 	glTexImage2D(
 		GL_TEXTURE_2D,
 		0,
@@ -426,16 +506,21 @@ void BVHDrawer::initScalarTexture(int i, GLuint & fbo, GLuint & tex)
 		GL_RGB,
 		GL_FLOAT,
 		NULL);
+	assert(glGetError() == GL_NO_ERROR);
 	glBindTexture(GL_TEXTURE_2D, screenFrameBuffer);
+	assert(glGetError() == GL_NO_ERROR);
 
 	glGenFramebuffers(1, &fbo);
+	assert(glGetError() == GL_NO_ERROR);
 	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+	assert(glGetError() == GL_NO_ERROR);
 	glFramebufferTexture2D(
 		GL_FRAMEBUFFER,
 		GL_COLOR_ATTACHMENT0,
 		GL_TEXTURE_2D,
 		tex,
 		0);
+	assert(glGetError() == GL_NO_ERROR);
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		throw "frame buffer not complete";
@@ -444,16 +529,23 @@ void BVHDrawer::initScalarTexture(int i, GLuint & fbo, GLuint & tex)
 void BVHDrawer::initRenderBuffer(GLuint & fbo, GLuint & rbo)
 {
 	glGenFramebuffers(1, &fbo);
+	assert(glGetError() == GL_NO_ERROR);
 	glGenRenderbuffers(1, &rbo);
+	assert(glGetError() == GL_NO_ERROR);
 	glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+	assert(glGetError() == GL_NO_ERROR);
 	glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA8, screenSize.width(), screenSize.height());
+	assert(glGetError() == GL_NO_ERROR);
 	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+	assert(glGetError() == GL_NO_ERROR);
 	glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, rbo);
+	assert(glGetError() == GL_NO_ERROR);
 }
 
 void BVHDrawer::reshapeScalarTexture(GLuint & tex)
 {
 	glBindTexture(GL_TEXTURE_2D, tex);
+	assert(glGetError() == GL_NO_ERROR);
 	glTexImage2D(
 		GL_TEXTURE_2D,
 		0,
@@ -464,11 +556,16 @@ void BVHDrawer::reshapeScalarTexture(GLuint & tex)
 		GL_RGB,
 		GL_FLOAT,
 		NULL);
+	assert(glGetError() == GL_NO_ERROR);
 	glBindTexture(GL_TEXTURE_2D, screenFrameBuffer);
+	assert(glGetError() == GL_NO_ERROR);
 }
 
 void BVHDrawer::generateMeshes()
 {
+	glDisable(GL_TEXTURE_2D);
+	assert(glGetError() == GL_NO_ERROR);
+
 	meshes.clear();
 	if (bvh->mMeshCenterCoordinatesNr < 2)
 		return;
@@ -544,7 +641,11 @@ void BVHDrawer::generateMeshes()
 	//m->indicesNr = meshIndices.size();
 	m->indicesNr = bvh->mMeshCenterCoordinatesNr;
 
+	assert(glGetError() == GL_NO_ERROR);
 	glGenVertexArrays(1, &m->vao);
+	GLenum err = GL_NO_ERROR;
+	if ((err = glGetError()) != GL_NO_ERROR)
+		qDebug() << err;
 	assert(glGetError() == GL_NO_ERROR);
 	glBindVertexArray(m->vao);
 	assert(glGetError() == GL_NO_ERROR);
@@ -759,6 +860,5 @@ void BVHDrawer::highlightNode(const unsigned &index)
 		bvh->mBVHToMeshIndices[index] * 4,
 		1 * sizeof(float),
 		&white);
-	//glBufferSubData(GL_ARRAY_BUFFER, bvh->mBVHToMeshIndices[index] * 4 * meshColors.size(), sizeof(float) * meshColors.size(), meshColors.data());
-
+	
 }

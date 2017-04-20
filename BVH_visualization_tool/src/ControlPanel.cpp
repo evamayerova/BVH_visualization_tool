@@ -10,7 +10,7 @@ ScalarValuesGUI::ScalarValuesGUI(QWidget *parent)
 	first = new QSlider(Qt::Horizontal, container);
 	second = new QSlider(Qt::Horizontal, container);
 	polynomDegreeLabel = new QLabel();
-	polynomDegreeLabel->setText("Polynom degree");
+	polynomDegreeLabel->setText("Transfer function exponent");
 	polynomDegree = new QDoubleSpinBox(container);
 	polynomDegree->setValue(1.0);
 	polynomDegree->setMinimum(0.0);

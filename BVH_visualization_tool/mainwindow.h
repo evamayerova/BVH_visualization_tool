@@ -76,10 +76,10 @@ private:
 	void createActions();
 	void createMenus();
 	float recalculateValue(const float &val);
-	void setScalars(QWidget *parent);
+	void setScalars();
 	void setSceneStats();
-	void setTreeDepthRange(QWidget *parent);
-	void setDisplayModes(QWidget *parent);
+	void setTreeDepthRange();
+	void setDisplayModes();
 	void showControlPanel(const QString &builderName = "tab");
 	void unconsistentBVHDialog();
 
@@ -96,8 +96,8 @@ private:
 	int mCurrentScalarSet;
 	int mCurrentTab;
 	float mScalarMax;
-	float mSliderStepAdd;
-	float mSliderStepMult;
+	std::vector<float> mSliderStepAdd;
+	std::vector<float> mSliderStepMult;
 	float polynomDegree;
 
 	// measuring

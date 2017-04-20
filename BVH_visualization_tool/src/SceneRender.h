@@ -30,5 +30,8 @@ public:
 	QOpenGLShaderProgram bboxShader;
 	PointLight light;
 	SceneDrawer *drawer;
+
+	int ctr;
+	qint64 cumTime;
 };
 

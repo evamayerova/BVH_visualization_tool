@@ -14,6 +14,8 @@ SceneDrawer::SceneDrawer(Scene *sc, QOpenGLShaderProgram *sceneShader, QOpenGLSh
 	setSceneBuffers();
 	setBBoxBuffers();
 	showBBox = false;
+	cutDepth = -1;
+	currentScalarSet = 0;
 }
 
 
@@ -198,25 +200,53 @@ void SceneDrawer::setBBoxVertices(BVH *bvh, BVHNode *node)
 	glBindBuffer(GL_ARRAY_BUFFER, bboxMesh->vbo);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, 8 * 3 * sizeof(GLfloat), vertices);
 
+	if (cutDepth == -1) {
+		std::vector<unsigned> triangles = getPrimitiveIndices(bvh, node);
+	
+		Color c;
+		c.color[0] = (char)0;
+		c.color[1] = (char)255;
+		c.color[2] = (char)0;
+		c.color[3] = (char)0;
 
-	std::vector<unsigned> triangles = getPrimitiveIndices(bvh, node);
+		std::vector<Color> localColors;
+		localColors.push_back(c);
+		localColors.push_back(c);
+		localColors.push_back(c);
 
-	Color c;
-	c.color[0] = (char)0;
-	c.color[1] = (char)255;
-	c.color[2] = (char)0;
-	c.color[3] = (char)0;
+		glBindVertexArray(sceneMesh->vao);
+		glBindBuffer(GL_ARRAY_BUFFER, sceneMesh->vboC);
+		for (std::vector<unsigned>::iterator it = triangles.begin(); it != triangles.end(); it++)
+		{
+			glBufferSubData(GL_ARRAY_BUFFER, scene->mTriangleIdx[currentBVHIndex][*it] * 3 * 4, sizeof(Color) * 3, localColors.data());
+		}
 
-	std::vector<Color> localColors;
-	localColors.push_back(c);
-	localColors.push_back(c);
-	localColors.push_back(c);
+	}
+	else {
+		std::vector<pair<unsigned, float>> triangles = getPrimitiveIndicesWithColors(bvh, node);
+	
+		Color c;
+		QVector3D color;
+		std::vector<Color> localColors;
+		colorMapping cm;
 
-	glBindVertexArray(sceneMesh->vao);
-	glBindBuffer(GL_ARRAY_BUFFER, sceneMesh->vboC);
-	for (std::vector<unsigned>::iterator it = triangles.begin(); it != triangles.end(); it++)
-	{
-		glBufferSubData(GL_ARRAY_BUFFER, scene->mTriangleIdx[currentBVHIndex][*it] * 3 * 4, sizeof(Color) * 3, localColors.data());
+		glBindVertexArray(sceneMesh->vao);
+		glBindBuffer(GL_ARRAY_BUFFER, sceneMesh->vboC);
+		for (std::vector<pair<unsigned, float>>::iterator it = triangles.begin(); it != triangles.end(); it++)
+		{
+			localColors.clear();
+			color = cm.setRainbowColor(it->second, bvh->mScalarSets[currentScalarSet]->selectedMin, bvh->mScalarSets[currentScalarSet]->selectedMax);
+			c.color[0] = color[0];
+			c.color[1] = color[1];
+			c.color[2] = color[2];
+			c.color[3] = char(0);
+
+			localColors.push_back(c);
+			localColors.push_back(c);
+			localColors.push_back(c);
+
+			glBufferSubData(GL_ARRAY_BUFFER, scene->mTriangleIdx[currentBVHIndex][it->first] * 3 * 4, sizeof(Color) * 3, localColors.data());
+		}
 	}
 
 }
@@ -249,9 +279,35 @@ std::vector<unsigned> SceneDrawer::getPrimitiveIndices(BVH *bvh, BVHNode *n) con
 	return result;
 }
 
+std::vector<pair<unsigned, float>> SceneDrawer::getPrimitiveIndicesWithColors(BVH *bvh, BVHNode *n) const
+{
+	std::vector<pair<unsigned, float>> result;
+	pair<unsigned, float> p;
+	if (n->axis == 3)
+	{
+		for (unsigned i = 0; i < n->children; i++) {
+			p.first = n->child + i;
+			p.second = bvh->mScalarSets[currentScalarSet]->colors[bvh->mBVHToMeshIndices[bvh->mNodeParents[n->child + i]]];
+			result.push_back(p);
+		}
+	}
+	else if (n->axis < 3)
+	{
+		std::vector<pair<unsigned, float>> leftTriangles = getPrimitiveIndicesWithColors(bvh, &bvh->mNodes[n->child]);
+		std::vector<pair<unsigned, float>> rightTriangles = getPrimitiveIndicesWithColors(bvh, &bvh->mNodes[n->child + 1]);
+
+		result.insert(result.end(), leftTriangles.begin(), leftTriangles.end());
+		result.insert(result.end(), rightTriangles.begin(), rightTriangles.end());
+	}
+	return result;
+}
+
 void SceneDrawer::draw(QMatrix4x4 *projection, QMatrix4x4 *view, QMatrix4x4 *model, PointLight *light)
 {
-	glEnable(GL_CULL_FACE);
+#ifdef RENDERING_TIMES
+	glFinish();
+#endif
+	glEnable(GL_CULL_FACE);	
 	sceneShader->bind();
 	assert(glGetError() == GL_NO_ERROR);
 
@@ -278,6 +334,9 @@ void SceneDrawer::draw(QMatrix4x4 *projection, QMatrix4x4 *view, QMatrix4x4 *mod
 		assert(glGetError() == GL_NO_ERROR);
 		bboxMesh->drawElements();
 	}
+#ifdef RENDERING_TIMES
+	glFinish();
+#endif
 }
 
 void SceneDrawer::drawToFile(const string & outputFile)

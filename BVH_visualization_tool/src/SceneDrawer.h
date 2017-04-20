@@ -3,6 +3,7 @@
 #include "Scene.h"
 #include "bvh.h"
 #include "Mesh.h"
+#include "../defines.h"
 
 #include <QOpenGLFunctions_4_3_Core>
 #include <QOpenGLShaderProgram>
@@ -22,9 +23,12 @@ public:
 	void setBBoxVertices(BVH *bvh, BVHNode *node);
 	void unsetBBoxMesh();
 	std::vector<unsigned> getPrimitiveIndices(BVH *bvh, BVHNode *n) const;
+	std::vector<pair<unsigned, float>> getPrimitiveIndicesWithColors(BVH *bvh, BVHNode *n) const;
 
 	bool showBBox;
+	int cutDepth;
 	int currentBVHIndex;
+	int currentScalarSet;
 
 private:
 	Scene *scene;

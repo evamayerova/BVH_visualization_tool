@@ -39,8 +39,8 @@ public:
     ~Render();
 
 	virtual void draw() {}
-	virtual void moveView(const QVector3D &change) {}
-	virtual void screenshot(const string &outputFile) {}
+	virtual void moveView(const QVector3D &) {}
+	virtual void screenshot(const string &) {}
 
 	//void loadScene(const string &sceneName);
 	void resetView();

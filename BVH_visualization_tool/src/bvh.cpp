@@ -197,7 +197,7 @@ void BVH::setDefaultScalars()
 
 	float sum;
 	ScalarSet *area = new ScalarSet();
-	area->name = "area";
+	area->name = "Surface area";
 	area->colors.resize(mMeshCenterCoordinatesNr);
 	for (unsigned i = 0; i < mMeshCenterCoordinatesNr; i++)
 	{
@@ -206,7 +206,7 @@ void BVH::setDefaultScalars()
 	mScalarSets.push_back(area);
 
 	ScalarSet *volume = new ScalarSet();
-	volume->name = "volume";
+	volume->name = "Bounding volume";
 	volume->colors.resize(mMeshCenterCoordinatesNr);
 	for (unsigned i = 0; i < mMeshCenterCoordinatesNr; i++)
 	{
@@ -216,7 +216,7 @@ void BVH::setDefaultScalars()
 
 	// area relatively to depth
 	ScalarSet *a = new ScalarSet();
-	a->name = "area relative to depth";
+	a->name = "Surface area relative to depth";
 	a->colors.resize(mMeshCenterCoordinatesNr);
 	for (unsigned i = 0; i < mMeshCenterCoordinatesNr; i++)
 	{
@@ -227,7 +227,7 @@ void BVH::setDefaultScalars()
 
 	// volume relatively to depth
 	ScalarSet *volumeRelativeDepth = new ScalarSet();
-	volumeRelativeDepth->name = "volume relative to depth";
+	volumeRelativeDepth->name = "Bounding volume relative to depth";
 	volumeRelativeDepth->colors.resize(mMeshCenterCoordinatesNr);
 	for (unsigned i = 0; i < mMeshCenterCoordinatesNr; i++)
 	{
@@ -238,7 +238,7 @@ void BVH::setDefaultScalars()
 
 	// sum of children area relative to parent area
 	ScalarSet *areaVsParent = new ScalarSet();
-	areaVsParent->name = "sum of children area relative to parent area";
+	areaVsParent->name = "Sum of children's surface areas relative to parent's";
 	areaVsParent->colors.resize(mMeshCenterCoordinatesNr);
 	for (unsigned i = 0; i < mMeshCenterCoordinatesNr; i++)
 	{
@@ -255,7 +255,7 @@ void BVH::setDefaultScalars()
 
 	// sum of children volume relative to parent volume
 	ScalarSet *volumeVsParent = new ScalarSet();
-	volumeVsParent->name = "sum of children volume relative to parent volume";
+	volumeVsParent->name = "Sum of children's bounding volumes relative to parent's";
 	volumeVsParent->colors.resize(mMeshCenterCoordinatesNr);
 	for (unsigned i = 0; i < mMeshCenterCoordinatesNr; i++)
 	{
@@ -289,7 +289,7 @@ void BVH::setDefaultScalars()
 	*/
 
 	ScalarSet *b = new ScalarSet();
-	b->name = "triangle number";
+	b->name = "Triangle number";
 	b->colors.resize(mMeshCenterCoordinatesNr);
 	for (unsigned i = 0; i < mMeshCenterCoordinatesNr; i++)
 	{

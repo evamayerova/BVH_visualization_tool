@@ -76,7 +76,7 @@ void OpenGlWidget3D::initializeGL()
 	render = NULL;
 	glClearColor(0.2, 0.2, 0.2, 1);
 	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_CULL_FACE);
+	//glEnable(GL_CULL_FACE);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	timer.start(12, this);
@@ -128,7 +128,7 @@ float OpenGlWidget3D::getNearPlane() const
 void OpenGlWidget3D::addBVH(BVH *b, const vector<unsigned> &indices)
 {
 	render->bvhs.push_back(b);
-	render->sc->mTriangleIdx.push_back(indices);
+	//render->sc->mTriangleIdx.push_back(indices);
 }
 
 void OpenGlWidget3D::setFarPlane(const float &f)

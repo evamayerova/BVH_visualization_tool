@@ -10,7 +10,7 @@ class TreeRender :
 {
 public:
 	TreeRender();
-	TreeRender(Render *render);
+	TreeRender(Render *render, const QSize &size);
 	TreeRender(const string &sceneName);
 	~TreeRender();
 
@@ -42,5 +42,8 @@ private:
 	GLint defaultFrameBuffer;
 	int drawMode;
 	QSize *size;
+
+	int ctr;
+	qint64 cumTime;
 };
 

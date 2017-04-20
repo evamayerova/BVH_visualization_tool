@@ -5,7 +5,6 @@
 #include <QVector3D>
 #include <assert.h>
 #include <cstdio>
-#include "lodepng/lodepng.h"
 
 enum BlendMode {
 	maxVal,

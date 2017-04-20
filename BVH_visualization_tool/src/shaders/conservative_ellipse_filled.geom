@@ -4,7 +4,10 @@ layout(triangle_strip, max_vertices = 49) out;
 
 in float color_vert[];
 in vec2 halfDims[];
+in mat4 mvp[];
+
 uniform vec2 hPixel;
+
 out vec4 frag_position;
 out float color_frag;
 const float PI = 3.1415926;
@@ -25,9 +28,9 @@ void main()
 		else if (offset[0] > 0)
 			offset[0] += hPixel[0];
 
-        gl_Position = gl_in[0].gl_Position + lastOffset;
+        gl_Position = gl_in[0].gl_Position + mvp[0] * lastOffset;
 		EmitVertex();
-		gl_Position = gl_in[0].gl_Position + offset;
+		gl_Position = gl_in[0].gl_Position + mvp[0] * offset;
 		EmitVertex();
 		gl_Position = gl_in[0].gl_Position;
         EmitVertex();
